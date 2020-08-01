@@ -12,7 +12,6 @@ Text-expansion library
 keywords = ["tracery", "text"]
 
 [dependencies]
-nom = "^5.1.2"
 serde = "^1.0.114"
 serde_json = "^1.0.57"
 rand = "^0.7.3"

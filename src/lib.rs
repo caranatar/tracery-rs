@@ -93,8 +93,6 @@
 //! `#heroPet#`, so that we can use those tags in the "story" rule, and know that the same
 //! generated value will be used in all cases.
 
-#[macro_use]
-extern crate nom;
 extern crate rand;
 extern crate serde;
 extern crate serde_json;
