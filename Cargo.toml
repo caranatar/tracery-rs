@@ -1,0 +1,19 @@
+[package]
+name = "tracery"
+version = "0.1.0"
+authors = ["Paul Woolcock <paul@woolcock.us>"]
+readme = "README.adoc"
+homepage = "https://gitlab.com/pwoolcoc/tracery-rs"
+repository = "https://gitlab.com/pwoolcoc/tracery-rs"
+license = "MIT/Apache-2.0"
+description = """
+Text-expansion library
+"""
+keywords = ["tracery", "text"]
+
+[dependencies]
+nom = "^5.1.2"
+serde = "^1.0.114"
+serde_json = "^1.0.57"
+rand = "^0.7.3"
+Inflector = "^0.11.4"
