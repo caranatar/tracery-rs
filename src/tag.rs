@@ -20,9 +20,9 @@ use crate::parser::parse_tag;
 /// ```
 #[derive(Debug, PartialEq, Clone)]
 pub struct Tag {
-    key: String,
-    actions: BTreeMap<String, Rule>,
-    modifiers: Vec<String>,
+    pub(crate) key: String,
+    pub(crate) actions: BTreeMap<String, Rule>,
+    pub(crate) modifiers: Vec<String>,
 }
 
 impl Tag {
