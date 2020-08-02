@@ -7,9 +7,9 @@ use std::fmt;
 use inflector::string::pluralize;
 use inflector::cases::{titlecase, sentencecase};
 
-use parser::parse_str;
+use crate::parser::parse_str;
 use super::{Result, Error};
-use tag::Tag;
+use crate::tag::Tag;
 
 /// Represents a single grammar
 ///

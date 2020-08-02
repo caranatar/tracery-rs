@@ -10,6 +10,7 @@ description = """
 Text-expansion library
 """
 keywords = ["tracery", "text"]
+edition = "2018"
 
 [dependencies]
 serde = "^1.0.114"

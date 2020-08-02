@@ -93,11 +93,6 @@
 //! `#heroPet#`, so that we can use those tags in the "story" rule, and know that the same
 //! generated value will be used in all cases.
 
-extern crate rand;
-extern crate serde;
-extern crate serde_json;
-extern crate inflector;
-
 use std::fmt;
 use std::error::Error as StdError;
 use std::collections::BTreeMap;
@@ -106,7 +101,7 @@ mod tag;
 mod grammar;
 mod parser;
 
-pub use grammar::{Flatten, Grammar};
+pub use crate::grammar::{Flatten, Grammar};
 
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
     Grammar::from_json(s)
@@ -154,7 +149,7 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 #[cfg(test)]
 mod tests {
     use super::from_json;
-    use grammar::{Flatten, Grammar};
+    use crate::grammar::{Flatten, Grammar};
     use std::collections::BTreeMap;
 
     #[test]

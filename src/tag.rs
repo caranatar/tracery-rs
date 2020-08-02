@@ -1,9 +1,9 @@
 use rand;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
-use grammar::{Flatten, Grammar, Rule};
+use crate::grammar::{Flatten, Grammar, Rule};
 use super::{Result, Error};
-use parser::parse_tag;
+use crate::parser::parse_tag;
 
 
 /// Structure representing a `#tag#` in a tracery rule
