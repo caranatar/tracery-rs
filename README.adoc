@@ -1,5 +1,7 @@
 = Tracery
 
+This is a direct update/refresh of the original crate published by Paul Woolcock. Other than removing the nom parser and replacing it with a pest parser, there are no major changes made to this version of the crate. Additional changes/roadmap to come.
+
 A Text-Expansion Library for Rust
 
 Tracery was originally a javascript library written by https://github.com/galaxykate[galaxykate], and is available at https://github.com/galaxykate/tracery.
