@@ -30,7 +30,7 @@ impl fmt::Debug for Grammar {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Rule(Vec<Node>);
+pub struct Rule(pub(crate) Vec<Node>);
 
 impl Rule {
     pub fn new(nodes: Vec<Node>) -> Rule {
