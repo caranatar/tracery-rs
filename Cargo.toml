@@ -1,10 +1,10 @@
 [package]
 name = "tracery"
 version = "0.1.0"
-authors = ["Paul Woolcock <paul@woolcock.us>"]
+authors = ["Caranatar <caranatar@riseup.net>", "Paul Woolcock <paul@woolcock.us>"]
 readme = "README.adoc"
-homepage = "https://gitlab.com/pwoolcoc/tracery-rs"
-repository = "https://gitlab.com/pwoolcoc/tracery-rs"
+homepage = "https://github.com/caranatar/tracery-rs"
+repository = "https://github.com/caranatar/tracery-rs"
 license = "MIT/Apache-2.0"
 description = """
 Text-expansion library
