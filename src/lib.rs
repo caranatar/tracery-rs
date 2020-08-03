@@ -93,13 +93,13 @@
 //! `#heroPet#`, so that we can use those tags in the "story" rule, and know that the same
 //! generated value will be used in all cases.
 
-use std::fmt;
-use std::error::Error as StdError;
 use std::collections::BTreeMap;
+use std::error::Error as StdError;
+use std::fmt;
 
-mod tag;
 mod grammar;
 mod parser;
+mod tag;
 
 pub use crate::grammar::{Flatten, Grammar};
 

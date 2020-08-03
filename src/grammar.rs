@@ -1,19 +1,17 @@
-use rand;
-use rand::seq::SliceRandom;
-use serde_json;
-use std::default::Default;
-use std::collections::BTreeMap;
-use std::fmt;
+use inflector::cases::{sentencecase, titlecase};
 use inflector::string::pluralize;
-use inflector::cases::{titlecase, sentencecase};
+use rand::seq::SliceRandom;
+use std::collections::BTreeMap;
+use std::default::Default;
+use std::fmt;
 
+use super::{Error, Result};
 use crate::parser::parse_str;
-use super::{Result, Error};
 use crate::tag::Tag;
 
 /// Represents a single grammar
 ///
-/// This is the main data type used with this library. 
+/// This is the main data type used with this library.
 pub struct Grammar {
     map: BTreeMap<String, Vec<Rule>>,
     default_rule: String,
@@ -22,10 +20,11 @@ pub struct Grammar {
 
 impl fmt::Debug for Grammar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "Grammar {{ map: {:?}, default_rule: {:?} }}",
-               self.map,
-               self.default_rule)
+        write!(
+            f,
+            "Grammar {{ map: {:?}, default_rule: {:?} }}",
+            self.map, self.default_rule
+        )
     }
 }
 
@@ -87,35 +86,38 @@ impl Node {
 impl Default for Grammar {
     fn default() -> Grammar {
         let mut modifiers = BTreeMap::new();
-        modifiers.insert("capitalize".into(),
-                         Box::new(|s: &str| {
-                             sentencecase::to_sentence_case(s)
-                         }) as Box<dyn Fn(&str) -> String>);
-        modifiers.insert("capitalizeAll".into(),
-                         Box::new(|s: &str| {
-                             titlecase::to_title_case(s)
-                         }) as Box<dyn Fn(&str) -> String>);
-        modifiers.insert("inQuotes".into(),
-                         Box::new(|s: &str| format!("\"{}\"", s)) as Box<dyn Fn(&str) -> String>);
-        modifiers.insert("comma".into(),
-                         Box::new(|s: &str| {
-                             if s.ends_with(',') || s.ends_with('.') || s.ends_with('!') ||
-                                s.ends_with('?') {
-                                 s.to_string()
-                             } else {
-                                 format!("{},", s)
-                             }
-                         }) as Box<dyn Fn(&str) -> String>);
+        modifiers.insert(
+            "capitalize".into(),
+            Box::new(|s: &str| sentencecase::to_sentence_case(s)) as Box<dyn Fn(&str) -> String>,
+        );
+        modifiers.insert(
+            "capitalizeAll".into(),
+            Box::new(|s: &str| titlecase::to_title_case(s)) as Box<dyn Fn(&str) -> String>,
+        );
+        modifiers.insert(
+            "inQuotes".into(),
+            Box::new(|s: &str| format!("\"{}\"", s)) as Box<dyn Fn(&str) -> String>,
+        );
+        modifiers.insert(
+            "comma".into(),
+            Box::new(|s: &str| {
+                if s.ends_with(',') || s.ends_with('.') || s.ends_with('!') || s.ends_with('?') {
+                    s.to_string()
+                } else {
+                    format!("{},", s)
+                }
+            }) as Box<dyn Fn(&str) -> String>,
+        );
         // modifiers.insert("beeSpeak".into(),
         //                  Box::new(|s: &str| {
         //                  }) as Box<Fn(&str) -> String>);
         // modifiers.insert("a".into(),
         //                  Box::new(|s: &str| {
         //                  }) as Box<Fn(&str) -> String>);
-        modifiers.insert("s".into(),
-                         Box::new(|s: &str| {
-                             pluralize::to_plural(s)
-                         }) as Box<dyn Fn(&str) -> String>);
+        modifiers.insert(
+            "s".into(),
+            Box::new(|s: &str| pluralize::to_plural(s)) as Box<dyn Fn(&str) -> String>,
+        );
         // modifiers.insert("ed".into(),
         //                  Box::new(|s: &str| {
         //                  }) as Box<Fn(&str) -> String>);
@@ -132,8 +134,8 @@ impl Grammar {
         Default::default()
     }
 
-    pub fn get_modifier(&self, modifier: &str) -> Option<&Box<dyn Fn(&str) -> String>> {
-        self.modifier_registry.get(modifier)
+    pub fn get_modifier(&self, modifier: &str) -> Option<&dyn Fn(&str) -> String> {
+        self.modifier_registry.get(modifier).map(|x| x.as_ref())
     }
 
     pub fn get_rule(&self, key: &str) -> Option<&Vec<Rule>> {
@@ -162,17 +164,20 @@ impl Grammar {
 }
 
 pub trait Flatten {
-    fn flatten(&self,
-               grammar: &Grammar,
-               overrides: &mut BTreeMap<String, String>)
-               -> Result<String>;
+    fn flatten(
+        &self,
+        grammar: &Grammar,
+        overrides: &mut BTreeMap<String, String>,
+    ) -> Result<String>;
 }
 
 impl Flatten for Grammar {
     fn flatten(&self, _: &Grammar, overrides: &mut BTreeMap<String, String>) -> Result<String> {
         if !self.map.contains_key(&self.default_rule) {
-            return Err(Error::MissingKeyError(format!("Grammar does not contain key {}",
-                                                      self.default_rule)));
+            return Err(Error::MissingKeyError(format!(
+                "Grammar does not contain key {}",
+                self.default_rule
+            )));
         }
 
         match self.map.get(&self.default_rule) {
@@ -187,26 +192,29 @@ impl Flatten for Grammar {
 }
 
 impl Flatten for Rule {
-    fn flatten(&self,
-               grammar: &Grammar,
-               overrides: &mut BTreeMap<String, String>)
-               -> Result<String> {
-        let parts = self.0
-                             .iter()
-                             .map(|n| n.flatten(grammar, overrides))
-                             .collect::<Result<Vec<String>>>()?;
+    fn flatten(
+        &self,
+        grammar: &Grammar,
+        overrides: &mut BTreeMap<String, String>,
+    ) -> Result<String> {
+        let parts = self
+            .0
+            .iter()
+            .map(|n| n.flatten(grammar, overrides))
+            .collect::<Result<Vec<String>>>()?;
         Ok(parts.join(""))
     }
 }
 
 impl Flatten for Node {
-    fn flatten(&self,
-               grammar: &Grammar,
-               overrides: &mut BTreeMap<String, String>)
-               -> Result<String> {
+    fn flatten(
+        &self,
+        grammar: &Grammar,
+        overrides: &mut BTreeMap<String, String>,
+    ) -> Result<String> {
         match self {
-            &Node::Tag(ref tag) => tag.flatten(grammar, overrides),
-            &Node::Text(ref s) => s.flatten(grammar, overrides),
+            Node::Tag(ref tag) => tag.flatten(grammar, overrides),
+            Node::Text(ref s) => s.flatten(grammar, overrides),
         }
     }
 }

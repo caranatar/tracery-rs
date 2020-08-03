@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
-use pest_derive::Parser;
 use pest::Parser;
+use pest_derive::Parser;
 
-use crate::Error;
+use crate::grammar::Node;
 use crate::grammar::Rule as TRule;
 use crate::tag::Tag;
-use crate::grammar::Node;
+use crate::Error;
 
 #[derive(Parser)]
 #[grammar = "tracery.pest"]
@@ -15,7 +15,9 @@ struct TraceryParser;
 type PestError = pest::error::Error<Rule>;
 
 fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
-    let parsed_str = TraceryParser::parse(Rule::rule, s.as_ref())?.next().unwrap();
+    let parsed_str = TraceryParser::parse(Rule::rule, s.as_ref())?
+        .next()
+        .unwrap();
 
     let nodes = parsed_str.into_inner().try_fold(Vec::new(), |mut acc, p| {
         match p.as_rule() {
@@ -30,9 +32,7 @@ fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
 }
 
 pub fn parse_str<S: AsRef<str>>(s: S) -> Result<TRule, Error> {
-    parse_rule(s).map_err(|e| {
-        Error::ParseError(format!("{}", e))
-    })
+    parse_rule(s).map_err(|e| Error::ParseError(format!("{}", e)))
 }
 
 fn parse_action(a: pest::iterators::Pair<Rule>) -> Result<(String, TRule), PestError> {
@@ -42,10 +42,10 @@ fn parse_action(a: pest::iterators::Pair<Rule>) -> Result<(String, TRule), PestE
         match part.as_rule() {
             Rule::tagname => {
                 tagname = part.as_str();
-            },
+            }
             Rule::action_rhs => {
                 rule = Some(parse_rule(part.as_str())?);
-            },
+            }
             _ => unreachable!(),
         }
         println!("part of action => {:?}", part);
@@ -63,19 +63,21 @@ fn parse_tag_pair(s: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
             Rule::action => {
                 let (key, action) = parse_action(part)?;
                 actions.insert(key, action);
-            },
+            }
             Rule::tagname => {
                 tagname = part.as_str();
-            },
+            }
             Rule::modifier => {
                 let modifier = part.into_inner().next().unwrap().as_str();
                 modifiers.push(modifier);
-            },
+            }
             _ => unreachable!(),
         }
     }
 
-    Ok(Tag::new(tagname).with_actions(actions).with_modifiers(modifiers))
+    Ok(Tag::new(tagname)
+        .with_actions(actions)
+        .with_modifiers(modifiers))
 }
 
 fn parse_tag_str<S: AsRef<str>>(s: S) -> Result<Tag, PestError> {
@@ -85,15 +87,13 @@ fn parse_tag_str<S: AsRef<str>>(s: S) -> Result<Tag, PestError> {
 }
 
 pub fn parse_tag<S: AsRef<str>>(s: S) -> Result<Tag, Error> {
-    parse_tag_str(s).map_err(|e| {
-        Error::ParseError(format!("{}", e))
-    })
+    parse_tag_str(s).map_err(|e| Error::ParseError(format!("{}", e)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn parse_tagname() -> Result<(), Error> {
         let tag = parse_tag("#one#")?;
@@ -157,9 +157,14 @@ mod tests {
     fn parse_mixed_rule() -> Result<(), Error> {
         let rule = parse_str("hello. [a][b]: #name# more after")?;
 
-        assert_eq!(rule.0, vec![Node::Text("hello. [a][b]: ".to_string()),
-                                Node::Tag(Tag::new("name")),
-                                Node::Text(" more after".to_string())]);
+        assert_eq!(
+            rule.0,
+            vec![
+                Node::Text("hello. [a][b]: ".to_string()),
+                Node::Tag(Tag::new("name")),
+                Node::Text(" more after".to_string())
+            ]
+        );
 
         Ok(())
     }
@@ -169,20 +174,23 @@ mod tests {
         let src = "#hero# traveled with her pet #heroPet#.  #hero# was never #mood#, for the \
                    #heroPet# was always too #mood#.";
         let rule = parse_str(src)?;
-        assert_eq!(rule.0, vec![
-                            Node::Tag(Tag::new("hero")),
-                            Node::Text(" traveled with her pet ".into()),
-                            Node::Tag(Tag::new("heroPet")),
-                            Node::Text(".  ".into()),
-                            Node::Tag(Tag::new("hero")),
-                            Node::Text(" was never ".into()),
-                            Node::Tag(Tag::new("mood")),
-                            Node::Text(", for the ".into()),
-                            Node::Tag(Tag::new("heroPet")),
-                            Node::Text(" was always too ".into()),
-                            Node::Tag(Tag::new("mood")),
-                            Node::Text(".".into()),
-        ]);
+        assert_eq!(
+            rule.0,
+            vec![
+                Node::Tag(Tag::new("hero")),
+                Node::Text(" traveled with her pet ".into()),
+                Node::Tag(Tag::new("heroPet")),
+                Node::Text(".  ".into()),
+                Node::Tag(Tag::new("hero")),
+                Node::Text(" was never ".into()),
+                Node::Tag(Tag::new("mood")),
+                Node::Text(", for the ".into()),
+                Node::Tag(Tag::new("heroPet")),
+                Node::Text(" was always too ".into()),
+                Node::Tag(Tag::new("mood")),
+                Node::Text(".".into()),
+            ]
+        );
 
         Ok(())
     }
@@ -194,9 +202,12 @@ mod tests {
         actions.insert("one".to_string(), TRule::parse("#two#").unwrap());
         actions.insert("three".to_string(), TRule::parse("#four#").unwrap());
         let tag = parse_tag(src)?;
-        assert_eq!(tag, Tag::new("tagname")
-                   .with_actions(actions)
-                   .with_modifiers(vec!["s", "capitalize"]));
+        assert_eq!(
+            tag,
+            Tag::new("tagname")
+                .with_actions(actions)
+                .with_modifiers(vec!["s", "capitalize"])
+        );
         Ok(())
     }
 }

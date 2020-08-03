@@ -1,10 +1,8 @@
-use rand;
+use super::{Error, Result};
+use crate::grammar::{Flatten, Grammar, Rule};
+use crate::parser::parse_tag;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
-use crate::grammar::{Flatten, Grammar, Rule};
-use super::{Result, Error};
-use crate::parser::parse_tag;
-
 
 /// Structure representing a `#tag#` in a tracery rule
 ///
@@ -37,10 +35,11 @@ impl Tag {
     /// uses self.key to retrieve a list of rules for that key.
     /// First we look in the `Tag`s `actions`, and if the key isn't present, we use a `Grammar`
     /// (presumably the context that we are flattening this tag in)
-    pub fn get_rule(&self,
-                    grammar: &Grammar,
-                    overrides: &mut BTreeMap<String, String>)
-                    -> Result<String> {
+    pub fn get_rule(
+        &self,
+        grammar: &Grammar,
+        overrides: &mut BTreeMap<String, String>,
+    ) -> Result<String> {
         if let Some(rule) = overrides.get(&self.key) {
             return Ok(rule.clone());
         }
@@ -51,7 +50,10 @@ impl Tag {
             return choice.flatten(grammar, overrides);
         }
 
-        Err(Error::MissingKeyError(format!("Could not find key {}", self.key)))
+        Err(Error::MissingKeyError(format!(
+            "Could not find key {}",
+            self.key
+        )))
     }
 
     pub fn apply_modifiers(&self, s: &str, grammar: &Grammar) -> String {
@@ -61,7 +63,7 @@ impl Tag {
                 string = f(&string);
             }
         }
-        string.to_owned()
+        string
     }
 
     pub fn add_action(mut self, action: (String, Rule)) -> Tag {
@@ -83,11 +85,11 @@ impl Tag {
 }
 
 impl Flatten for Tag {
-    fn flatten(&self,
-               grammar: &Grammar,
-               overrides: &mut BTreeMap<String, String>)
-               -> Result<String> {
-
+    fn flatten(
+        &self,
+        grammar: &Grammar,
+        overrides: &mut BTreeMap<String, String>,
+    ) -> Result<String> {
         let mut map = BTreeMap::new();
         for (label, rule) in self.actions.clone().into_iter() {
             map.insert(label, rule.flatten(grammar, overrides)?);
@@ -104,7 +106,6 @@ impl Flatten for Tag {
         for (label, rule) in map.into_iter() {
             overrides.insert(label, rule);
         }
-
 
         let choice = self.get_rule(grammar, &mut overrides)?;
 
