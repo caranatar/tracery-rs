@@ -108,19 +108,60 @@ impl Default for Grammar {
                 }
             }) as Box<dyn Fn(&str) -> String>,
         );
-        // modifiers.insert("beeSpeak".into(),
-        //                  Box::new(|s: &str| {
-        //                  }) as Box<Fn(&str) -> String>);
-        // modifiers.insert("a".into(),
-        //                  Box::new(|s: &str| {
-        //                  }) as Box<Fn(&str) -> String>);
         modifiers.insert(
             "s".into(),
             Box::new(|s: &str| pluralize::to_plural(s)) as Box<dyn Fn(&str) -> String>,
         );
-        // modifiers.insert("ed".into(),
-        //                  Box::new(|s: &str| {
-        //                  }) as Box<Fn(&str) -> String>);
+        let is_vowel = |c: char| -> bool {
+            match c {
+                'a' | 'e' | 'i' | 'o' | 'u' => true,
+                _ => false,
+            }
+        };
+        modifiers.insert(
+            "a".into(),
+            Box::new(move |s: &str| {
+                format!(
+                    "{} {}",
+                    match s.chars().next().map(is_vowel) {
+                        Some(true) => "an",
+                        _ => "a",
+                    },
+                    s
+                )
+            }) as Box<dyn Fn(&str) -> String>,
+        );
+
+        // Gets a char offset -n from the end. Returns None if n is larger than
+        // len, returns s.get(s.len()-n) otherwise
+        let get_neg = |s: &str, n: usize| -> Option<char> {
+            if n > s.len() {
+                None
+            } else {
+                s.chars().nth(s.len() - n)
+            }
+        };
+        modifiers.insert(
+            "ed".into(),
+            Box::new(move |s: &str| {
+                let mut iter = s.splitn(2, char::is_whitespace);
+                let first = iter.next().map(|s| match get_neg(s, 1) {
+                    Some('y') => match get_neg(s, 2).map(is_vowel) {
+                        Some(true) => format!("{}{}", s, "ed"),
+                        _ => format!("{}{}", &s[..s.len() - 1], "ied"),
+                    },
+                    Some('e') => format!("{}{}", s, "d"),
+                    Some(_) => format!("{}{}", s, "ed"),
+                    None => s.to_string(),
+                }).unwrap_or_else(String::default);
+                let rest = iter.next().unwrap_or_else(|| "");
+                format!(
+                    "{} {}",
+                    first,
+                    rest,
+                )
+            }) as Box<dyn Fn(&str) -> String>,
+        );
         Grammar {
             map: BTreeMap::new(),
             default_rule: "origin".into(),
