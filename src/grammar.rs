@@ -1,4 +1,4 @@
-use inflector::cases::{sentencecase, titlecase};
+use inflector::cases::titlecase;
 use inflector::string::pluralize;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
@@ -88,7 +88,13 @@ impl Default for Grammar {
         let mut modifiers = BTreeMap::new();
         modifiers.insert(
             "capitalize".into(),
-            Box::new(|s: &str| sentencecase::to_sentence_case(s)) as Box<dyn Fn(&str) -> String>,
+            Box::new(|s: &str| {
+                let mut iter = s.chars();
+                let u = iter.next().map(|c| c.to_uppercase().to_string());
+                format!("{}{}",
+                        u.unwrap_or_else(String::default),
+                        iter.collect::<String>())
+            }) as Box<dyn Fn(&str) -> String>,
         );
         modifiers.insert(
             "capitalizeAll".into(),
@@ -263,5 +269,28 @@ impl Flatten for Node {
 impl Flatten for String {
     fn flatten(&self, _: &Grammar, _: &mut BTreeMap<String, String>) -> Result<String> {
         Ok(self.to_owned())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn capitalize() {
+        let g = Grammar::new();
+        let c = g.get_modifier("capitalize").unwrap();
+        assert_eq!(c(""), "");
+        assert_eq!(c("a"), "A");
+        assert_eq!(c("abc"), "Abc");
+        assert_eq!(c("a b"), "A b");
+        assert_eq!(c("aBC"), "ABC");
+        assert_eq!(c("ABC"), "ABC");
+
+        // Test expansion into multiple characters
+        assert_eq!(c("ß"), "SS");
+        assert_eq!(c("ßBC"), "SSBC");
+        assert_eq!(c("ßbc"), "SSbc");
+        assert_eq!(c("ß bc"), "SS bc");
     }
 }
