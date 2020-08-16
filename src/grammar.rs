@@ -1,4 +1,3 @@
-use inflector::cases::titlecase;
 use inflector::string::pluralize;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
@@ -101,7 +100,10 @@ impl Default for Grammar {
         );
         modifiers.insert(
             "capitalizeAll".into(),
-            Box::new(|s: &str| titlecase::to_title_case(s)) as Box<dyn Fn(&str) -> String>,
+            Box::new(move |s: &str| {
+                use split_preserve::SplitPreserveWS;
+                SplitPreserveWS::new(s).map_words(capitalize).collect()
+            }) as Box<dyn Fn(&str) -> String>,
         );
         modifiers.insert(
             "inQuotes".into(),
@@ -295,5 +297,19 @@ mod tests {
         assert_eq!(c("ßBC"), "SSBC");
         assert_eq!(c("ßbc"), "SSbc");
         assert_eq!(c("ß bc"), "SS bc");
+    }
+
+    #[test]
+    fn capitalize_all() {
+        let g = Grammar::new();
+        let c = g.get_modifier("capitalizeAll").unwrap();
+        assert_eq!(c(""), "");
+        assert_eq!(c("a"), "A");
+        assert_eq!(c("a b"), "A B");
+        assert_eq!(c("ABC"), "ABC");
+        assert_eq!(c("abc\nDEF"), "Abc\nDEF");
+        assert_eq!(c("ß bc"), "SS Bc");
+        assert_eq!(c("bc\t\nßßß"), "Bc\t\nSSßß");
+        assert_eq!(c("\ta\nb"), "\tA\nB");
     }
 }
