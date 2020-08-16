@@ -337,6 +337,57 @@ mod tests {
     }
 
     #[test]
+    fn in_quotes() {
+        let g = Grammar::new();
+        let c = g.get_modifier("inQuotes").unwrap();
+        assert_eq!(c(""), r#""""#);
+        assert_eq!(c("hail eris"), r#""hail eris""#);
+    }
+
+    #[test]
+    fn comma() {
+        let g = Grammar::new();
+        let c = g.get_modifier("comma").unwrap();
+
+        assert_eq!(c("a,"), "a,");
+        assert_eq!(c("a."), "a.");
+        assert_eq!(c("a!"), "a!");
+        assert_eq!(c("a?"), "a?");
+
+        assert_eq!(c("a"), "a,");
+        assert_eq!(c(""), ",");
+    }
+
+    #[test]
+    fn s() {
+        let g = Grammar::new();
+        let c = g.get_modifier("s").unwrap();
+
+        assert_eq!(c(""), "s");
+        assert_eq!(c("harpy"), "harpies");
+        assert_eq!(c("box"), "boxes");
+        assert_eq!(c("index"), "indices");
+        assert_eq!(c("goose"), "geese");
+        assert_eq!(c("ox"), "oxen");
+        assert_eq!(c("cat"), "cats");
+    }
+
+    #[test]
+    fn a() {
+        let g = Grammar::new();
+        let c = g.get_modifier("a").unwrap();
+
+        assert_eq!(c(""), "a ");
+        assert_eq!(c("cat"), "a cat");
+        assert_eq!(c("a"), "an a");
+        assert_eq!(c("e"), "an e");
+        assert_eq!(c("i"), "an i");
+        assert_eq!(c("o"), "an o");
+        assert_eq!(c("u"), "an u");
+        assert_eq!(c("xylophone"), "a xylophone");
+    }
+
+    #[test]
     fn ed() {
         let g = Grammar::new();
         let c = g.get_modifier("ed").unwrap();
