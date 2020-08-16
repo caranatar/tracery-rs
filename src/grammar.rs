@@ -86,15 +86,18 @@ impl Node {
 impl Default for Grammar {
     fn default() -> Grammar {
         let mut modifiers = BTreeMap::new();
+        let capitalize = |s: &str| {
+            let mut iter = s.chars();
+            let u = iter.next().map(|c| c.to_uppercase().to_string());
+            format!(
+                "{}{}",
+                u.unwrap_or_else(String::default),
+                iter.collect::<String>()
+            )
+        };
         modifiers.insert(
             "capitalize".into(),
-            Box::new(|s: &str| {
-                let mut iter = s.chars();
-                let u = iter.next().map(|c| c.to_uppercase().to_string());
-                format!("{}{}",
-                        u.unwrap_or_else(String::default),
-                        iter.collect::<String>())
-            }) as Box<dyn Fn(&str) -> String>,
+            Box::new(capitalize) as Box<dyn Fn(&str) -> String>,
         );
         modifiers.insert(
             "capitalizeAll".into(),
