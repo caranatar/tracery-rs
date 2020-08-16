@@ -155,22 +155,45 @@ impl Default for Grammar {
         modifiers.insert(
             "ed".into(),
             Box::new(move |s: &str| {
-                let mut iter = s.splitn(2, char::is_whitespace);
-                let first = iter.next().map(|s| match get_neg(s, 1) {
-                    Some('y') => match get_neg(s, 2).map(is_vowel) {
-                        Some(true) => format!("{}{}", s, "ed"),
-                        _ => format!("{}{}", &s[..s.len() - 1], "ied"),
-                    },
-                    Some('e') => format!("{}{}", s, "d"),
-                    Some(_) => format!("{}{}", s, "ed"),
-                    None => s.to_string(),
-                }).unwrap_or_else(String::default);
-                let rest = iter.next().unwrap_or_else(|| "");
-                format!(
-                    "{} {}",
-                    first,
-                    rest,
-                )
+                use split_preserve::{SplitPreserveWS, Token};
+                // Split, preserving whitespace
+                let mut iter = SplitPreserveWS::new(s);
+
+                // Consume and save any leading whitespace as `prefix`
+                let mut first = iter.next();
+                let mut prefix: Vec<String> = Vec::new();
+                while let Some(Token::Whitespace(s)) = first {
+                    prefix.push(s.to_string());
+                    first = iter.next();
+                }
+                let prefix: String = prefix.join("");
+
+                // Process the first word
+                let first = first
+                    .and_then(|t| match t {
+                        Token::Other(s) => Some(s),
+                        _ => None,
+                    })
+                    .map(|s| match get_neg(s, 1) {
+                        Some('y') => match get_neg(s, 2).map(is_vowel) {
+                            Some(true) => format!("{}{}", s, "ed"),
+                            _ => format!("{}{}", &s[..s.len() - 1], "ied"),
+                        },
+                        Some('e') => format!("{}{}", s, "d"),
+                        Some(_) | None => format!("{}{}", s, "ed"),
+                    })
+                    .unwrap_or_else(String::default);
+
+                // Collect the rest as a string
+                let rest: String = iter
+                    .map(|t| match t {
+                        Token::Other(s) => s.to_string(),
+                        Token::Whitespace(s) => s.to_string(),
+                    })
+                    .collect();
+
+                // Stitch prefix, first, and rest together into one String
+                format!("{}{}{}", prefix, first, rest,)
             }) as Box<dyn Fn(&str) -> String>,
         );
         Grammar {
@@ -311,5 +334,17 @@ mod tests {
         assert_eq!(c("ß bc"), "SS Bc");
         assert_eq!(c("bc\t\nßßß"), "Bc\t\nSSßß");
         assert_eq!(c("\ta\nb"), "\tA\nB");
+    }
+
+    #[test]
+    fn ed() {
+        let g = Grammar::new();
+        let c = g.get_modifier("ed").unwrap();
+
+        assert_eq!(c(""), "");
+        assert_eq!(c("box"), "boxed");
+        assert_eq!(c("hail eris"), "hailed eris");
+        assert_eq!(c("hail\t\neris"), "hailed\t\neris");
+        assert_eq!(c("\t\nhail eris"), "\t\nhailed eris");
     }
 }
