@@ -1,5 +1,7 @@
 use super::{Error, Result};
-use crate::grammar::{Flatten, Grammar, Rule};
+use crate::Flatten;
+use crate::Rule;
+use crate::grammar::Grammar;
 use crate::parser::parse_tag;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;

@@ -97,11 +97,13 @@ use std::collections::BTreeMap;
 use std::error::Error as StdError;
 use std::fmt;
 
+mod flatten;
 mod grammar;
 mod parser;
 mod tag;
 
-pub use crate::grammar::{Flatten, Grammar};
+pub use crate::flatten::Flatten;
+pub use crate::grammar::Grammar;
 
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
     Grammar::from_json(s)
@@ -149,7 +151,8 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 #[cfg(test)]
 mod tests {
     use super::from_json;
-    use crate::grammar::{Flatten, Grammar};
+    use crate::Flatten;
+    use crate::grammar::Grammar;
     use std::collections::BTreeMap;
 
     #[test]
