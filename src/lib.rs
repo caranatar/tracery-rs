@@ -102,6 +102,8 @@ mod grammar;
 mod node;
 use crate::node::Node;
 mod parser;
+mod rule;
+use crate::rule::Rule;
 mod tag;
 
 pub use crate::flatten::Flatten;
