@@ -7,6 +7,7 @@ use std::fmt;
 use super::{Error, Result};
 use crate::parser::parse_str;
 use crate::tag::Tag;
+use crate::Flatten;
 
 /// Represents a single grammar
 ///
@@ -236,14 +237,6 @@ impl Grammar {
         self.map.insert(name.into(), rules);
         Ok(())
     }
-}
-
-pub trait Flatten {
-    fn flatten(
-        &self,
-        grammar: &Grammar,
-        overrides: &mut BTreeMap<String, String>,
-    ) -> Result<String>;
 }
 
 impl Flatten for Grammar {
