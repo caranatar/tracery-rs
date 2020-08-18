@@ -99,6 +99,8 @@ use std::fmt;
 
 mod flatten;
 mod grammar;
+mod node;
+use crate::node::Node;
 mod parser;
 mod tag;
 

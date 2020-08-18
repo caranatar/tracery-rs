@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use pest::Parser;
 use pest_derive::Parser;
 
-use crate::grammar::Node;
 use crate::grammar::Rule as TRule;
+use crate::Node;
 use crate::tag::Tag;
 use crate::Error;
 
