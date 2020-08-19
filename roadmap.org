@@ -1,5 +1,6 @@
 * v0.1.x
 ** TODO pass #![deny(missing_docs)]
+** TODO add tests
 ** TODO break out default modifiers
 ** TODO proper stack for rules
 ** TODO add support for popping rules
