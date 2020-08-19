@@ -1,0 +1,12 @@
+* v0.1.x
+** TODO pass #![deny(missing_docs)]
+** TODO break out default modifiers
+** TODO proper stack for rules
+** TODO add support for popping rules
+** TODO add support for native map inputs to grammar
+** TODO remove internal json support from Grammar
+** TODO add feature flag for json support, enabled by default
+
+* v0.2.x
+** TODO turn json feature flag off by default
+** TODO add advanced traits
