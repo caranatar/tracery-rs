@@ -3,10 +3,10 @@ use std::collections::BTreeMap;
 use pest::Parser;
 use pest_derive::Parser;
 
-use crate::Node;
-use crate::Rule as TRule;
 use crate::tag::Tag;
 use crate::Error;
+use crate::Node;
+use crate::Rule as TRule;
 
 #[derive(Parser)]
 #[grammar = "tracery.pest"]

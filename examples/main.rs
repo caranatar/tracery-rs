@@ -1,6 +1,6 @@
 extern crate tracery;
-use std::io::{self, Read};
 use std::env;
+use std::io::{self, Read};
 use std::thread;
 use std::time::Duration;
 

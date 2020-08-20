@@ -167,8 +167,8 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 #[cfg(test)]
 mod tests {
     use super::from_json;
-    use crate::Flatten;
     use crate::grammar::Grammar;
+    use crate::Flatten;
     use std::collections::BTreeMap;
 
     #[test]

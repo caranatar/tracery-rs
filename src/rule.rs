@@ -1,7 +1,7 @@
+use crate::parser::parse_str;
 use crate::Flatten;
 use crate::Grammar;
 use crate::Node;
-use crate::parser::parse_str;
 use crate::Result;
 
 use std::collections::BTreeMap;

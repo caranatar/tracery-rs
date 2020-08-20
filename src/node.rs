@@ -1,7 +1,7 @@
 use crate::tag::Tag;
 use crate::Flatten;
-use crate::Result;
 use crate::Grammar;
+use crate::Result;
 
 use std::collections::BTreeMap;
 
