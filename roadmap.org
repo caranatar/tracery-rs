@@ -1,5 +1,5 @@
 * v0.1.x
-** TODO pass #![deny(missing_docs)]
+** DONE pass #![deny(missing_docs)]
 ** TODO add tests
 ** TODO get all existing, ignored doctests passing
 ** TODO break out default modifiers
@@ -8,9 +8,11 @@
 ** TODO add support for native map inputs to grammar
 ** TODO remove internal json support from Grammar
 ** TODO add feature flag for json support, enabled by default
+** TODO migrate README to markdown
 
 * v0.2.x
 ** TODO turn json feature flag off by default
+** TODO remove return from Grammar::add_rules
 ** TODO add advanced traits
 *** TODO Support HashMap<String, Vec<String>>
 *** TODO Support BTreeMap<String, Vec<String>>
