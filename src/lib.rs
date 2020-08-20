@@ -1,3 +1,4 @@
+#![deny(missing_docs)]
 //! Rust port of `tracery`
 //!
 //! This library is a port of https://github.com/galaxykate/tracery, which implements Generative
@@ -98,7 +99,9 @@ use std::error::Error as StdError;
 use std::fmt;
 
 mod flatten;
+pub use crate::flatten::Flatten;
 mod grammar;
+pub use crate::grammar::Grammar;
 mod node;
 use crate::node::Node;
 mod parser;
@@ -106,21 +109,27 @@ mod rule;
 use crate::rule::Rule;
 mod tag;
 
-pub use crate::flatten::Flatten;
-pub use crate::grammar::Grammar;
-
+/// Creates a new grammar from a JSON grammar string
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
     Grammar::from_json(s)
 }
 
+/// Creates a new grammar from a JSON grammar string, then uses it to create a
+/// random output string
 pub fn flatten<S: AsRef<str>>(s: S) -> Result<String> {
     from_json(s)?.flatten(&Grammar::new(), &mut BTreeMap::new())
 }
 
+/// The `tracery` error type
 #[derive(Debug, Clone)]
 pub enum Error {
+    /// Error encountered while parsing a rule
     ParseError(String),
+
+    /// A referenced key does not exist
     MissingKeyError(String),
+
+    /// Error encountered while parsing JSON input
     JsonError(String),
 }
 
@@ -150,6 +159,9 @@ impl StdError for Error {
     }
 }
 
+/// A convenience type for a `Result` of `T` or [`Error`]
+///
+/// [`Error`]: enum.Error.html
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 #[cfg(test)]

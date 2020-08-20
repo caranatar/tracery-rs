@@ -151,18 +151,22 @@ impl Default for Grammar {
 }
 
 impl Grammar {
+    /// Create a new default `Grammar`
     pub fn new() -> Grammar {
         Default::default()
     }
 
+    /// Gets a single modifier with the given name, if it exists
     pub fn get_modifier(&self, modifier: &str) -> Option<&dyn Fn(&str) -> String> {
         self.modifier_registry.get(modifier).map(|x| x.as_ref())
     }
 
+    /// Gets a rule with the given key, if it exists
     pub fn get_rule(&self, key: &str) -> Option<&Vec<Rule>> {
         self.map.get(key)
     }
 
+    /// Creates a new grammar from a JSON grammar string
     pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
         let source: BTreeMap<String, Vec<String>> = serde_json::from_str(s.as_ref())?;
         let mut me = Grammar::new();
@@ -173,11 +177,22 @@ impl Grammar {
         Ok(me)
     }
 
+    /// Sets a default rule for the `Grammar`
+    ///
+    /// # Returns
+    /// The modified `Grammar`
     pub fn default_rule<S: Into<String>>(mut self, s: S) -> Grammar {
         self.default_rule = s.into();
         self
     }
 
+    /// Adds a rule with the given key and list of rules to the `Grammar`
+    ///
+    /// # Returns
+    /// `Ok(())` on success
+    /// [`Error`] otherwise
+    ///
+    /// [`Error`]: enum.Error.html
     pub fn add_rules<S: Into<String>>(&mut self, name: S, rules: Vec<Rule>) -> Result<()> {
         self.map.insert(name.into(), rules);
         Ok(())
