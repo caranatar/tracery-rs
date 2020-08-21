@@ -1,8 +1,8 @@
 # Tracery
 A Text-Expansion Library for Rust
 
-[![Crates.io]https://img.shields.io/crates/v/tracery.svg](https://crates.io/crates/tracery)
-[![MIT licensed]https://img.shields.io/badge/license-MIT-blue.svg](LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/tracery.svg)](https://crates.io/crates/tracery)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Documentation](https://docs.rs/tracery/badge.svg)](https://docs.rs/tracery)
 [![Coverage Status](https://coveralls.io/repos/github/caranatar/tracery-rs/badge.svg?branch=master)](https://coveralls.io/github/caranatar/tracery-rs?branch=master)
 
