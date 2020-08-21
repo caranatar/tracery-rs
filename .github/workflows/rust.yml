@@ -31,7 +31,7 @@ jobs:
       run: cargo install cargo-tarpaulin -f
 
     - name: Run cargo-tarpaulin
-      run: cargo tarpaulin --out Xml --verbose --all-features --run-types Tests,Doctests --timeout 1200
+      run: cargo tarpaulin --out Xml --verbose --all-features --run-types Tests --timeout 1200
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
