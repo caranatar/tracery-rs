@@ -1,17 +1,17 @@
-= Tracery
+# Tracery
 
 This is a direct update/refresh of the original crate published by Paul Woolcock. Other than removing the nom parser and replacing it with a pest parser, there are no major changes made to this version of the crate. Additional changes/roadmap to come.
 
-A Text-Expansion Library for Rust
+## A Text-Expansion Library for Rust
 
-Tracery was originally a javascript library written by https://github.com/galaxykate[galaxykate], and is available at https://github.com/galaxykate/tracery.
+Tracery was originally a javascript library written by [galaxykate](https://github.com/galaxykate), and is available at <https://github.com/galaxykate/tracery>.
 It accepts a set of rules, and produces a single string according to specific syntax in the rule set.
 
 If a string in the rule set contains a word surrounded by `#` symbols, it will be used to select a piece of text from the rule named by the word between the `#` symbols.
 
 Here are some examples:
 
-```
+```rust
 let source = r#"{
     "origin": [ "The #adjective# #color# #animal# jumps over the #adjective# #animal#" ],
     "adjective": [ "quick", "lazy", "slow", "tired", "drunk", "awake", "frantic" ],
