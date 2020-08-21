@@ -1,8 +1,8 @@
 [package]
 name = "tracery"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Caranatar <caranatar@riseup.net>", "Paul Woolcock <paul@woolcock.us>"]
-readme = "README.adoc"
+readme = "README.md"
 homepage = "https://github.com/caranatar/tracery-rs"
 repository = "https://github.com/caranatar/tracery-rs"
 license = "MIT/Apache-2.0"
