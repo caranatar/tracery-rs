@@ -1,8 +1,10 @@
 # Tracery
+A Text-Expansion Library for Rust
 
-This is a direct update/refresh of the original crate published by Paul Woolcock. Other than removing the nom parser and replacing it with a pest parser, there are no major changes made to this version of the crate. Additional changes/roadmap to come.
-
-## A Text-Expansion Library for Rust
+[![Crates.io]https://img.shields.io/crates/v/tracery.svg](https://crates.io/crates/tracery)
+[![MIT licensed]https://img.shields.io/badge/license-MIT-blue.svg](LICENSE)
+[![Documentation](https://docs.rs/tracery/badge.svg)](https://docs.rs/tracery)
+[![Coverage Status](https://coveralls.io/repos/github/caranatar/tracery-rs/badge.svg?branch=master)](https://coveralls.io/github/caranatar/tracery-rs?branch=master)
 
 Tracery was originally a javascript library written by [galaxykate](https://github.com/galaxykate), and is available at <https://github.com/galaxykate/tracery>.
 It accepts a set of rules, and produces a single string according to specific syntax in the rule set.
