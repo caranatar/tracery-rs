@@ -27,11 +27,11 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
+    - name: Install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin -f
+
     - name: Run cargo-tarpaulin
-      uses: actions-rs/tarpaulin@v0.1
-      with:
-        version: '0.9.0'
-        args: '-- --test-threads 1'
+      run: cargo tarpaulin --out Xml --verbose --all-features --run-types Tests,Doctests --timeout 1200
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
