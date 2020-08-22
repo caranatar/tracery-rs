@@ -316,5 +316,10 @@ mod tests {
         assert_eq!(c("hail eris"), "hailed eris");
         assert_eq!(c("hail\t\neris"), "hailed\t\neris");
         assert_eq!(c("\t\nhail eris"), "\t\nhailed eris");
+
+        assert_eq!(c("storey"), "storeyed");
+        assert_eq!(c("story"), "storied");
+
+        assert_eq!(c("blame"), "blamed");
     }
 }
