@@ -1,4 +1,4 @@
-name: Ubuntu-latest
+name: Coverage
 
 on:
   push:
@@ -24,9 +24,6 @@ jobs:
         toolchain: stable
         override: true
     
-    - name: Build
-      run: cargo build --verbose
-
     - name: Install cargo-tarpaulin
       run: cargo install cargo-tarpaulin -f
 
