@@ -224,6 +224,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn flatten_missing_key() -> Result<()> {
+        let input = r#"{
+            "a": ["a", "aa", "aaa"]
+        }"#;
+        let g = Grammar::from_json(input)?;
+        let res = g.flatten(&g, &mut BTreeMap::new());
+        assert!(res.is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn set_default_rule() -> Result<()> {
+        let input = r#"{
+            "a": ["a", "aa", "aaa"]
+        }"#;
+        let g = Grammar::from_json(input)?.default_rule("a");
+        let res = g.flatten(&g, &mut BTreeMap::new())?;
+        assert_eq!(res.chars().next().unwrap(), 'a');
+
+        Ok(())
+    }
+    
+    #[test]
     fn capitalize() {
         let g = Grammar::new();
         let c = g.get_modifier("capitalize").unwrap();
