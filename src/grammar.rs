@@ -3,10 +3,7 @@ use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
 use std::default::Default;
 
-use super::{Error, Result};
-use crate::parser::parse_str;
-use crate::Flatten;
-use crate::Rule;
+use crate::{parser::parse_str, Error, Flatten, Result, Rule};
 
 /// Represents a single grammar
 ///
@@ -235,7 +232,7 @@ mod tests {
 
         Ok(())
     }
-    
+
     #[test]
     fn capitalize() {
         let g = Grammar::new();
