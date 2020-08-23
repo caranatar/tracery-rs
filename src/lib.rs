@@ -95,9 +95,9 @@
 //! generated value will be used in all cases.
 
 use std::collections::BTreeMap;
-use std::error::Error as StdError;
-use std::fmt;
 
+mod error;
+pub use crate::error::Error;
 mod flatten;
 pub use crate::flatten::Flatten;
 mod grammar;
@@ -118,45 +118,6 @@ pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
 /// random output string
 pub fn flatten<S: AsRef<str>>(s: S) -> Result<String> {
     from_json(s)?.flatten(&Grammar::new(), &mut BTreeMap::new())
-}
-
-/// The `tracery` error type
-#[derive(Debug, Clone)]
-pub enum Error {
-    /// Error encountered while parsing a rule
-    ParseError(String),
-
-    /// A referenced key does not exist
-    MissingKeyError(String),
-
-    /// Error encountered while parsing JSON input
-    JsonError(String),
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(e: serde_json::Error) -> Error {
-        Error::JsonError(format!("{}", e))
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::ParseError(ref s) => write!(f, "parse error: {}", s),
-            Error::MissingKeyError(ref s) => write!(f, "missing key error: {}", s),
-            Error::JsonError(ref s) => write!(f, "json error: {}", s),
-        }
-    }
-}
-
-impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::ParseError(ref s) => s,
-            Error::MissingKeyError(ref s) => s,
-            Error::JsonError(ref s) => s,
-        }
-    }
 }
 
 /// A convenience type for a `Result` of `T` or [`Error`]
