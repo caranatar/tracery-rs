@@ -64,11 +64,6 @@ impl Tag {
         string
     }
 
-    pub fn add_action(mut self, action: (String, Rule)) -> Tag {
-        self.actions.insert(action.0, action.1);
-        self
-    }
-
     pub fn with_actions(mut self, actions: BTreeMap<String, Rule>) -> Tag {
         self.actions = actions;
         self
