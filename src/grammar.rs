@@ -2,7 +2,6 @@ use inflector::string::pluralize;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
 use std::default::Default;
-use std::fmt;
 
 use super::{Error, Result};
 use crate::parser::parse_str;
@@ -16,16 +15,6 @@ pub struct Grammar {
     map: BTreeMap<String, Vec<Rule>>,
     default_rule: String,
     modifier_registry: BTreeMap<String, Box<dyn Fn(&str) -> String>>,
-}
-
-impl fmt::Debug for Grammar {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Grammar {{ map: {:?}, default_rule: {:?} }}",
-            self.map, self.default_rule
-        )
-    }
 }
 
 impl Default for Grammar {
