@@ -187,20 +187,16 @@ impl Grammar {
 
 impl Flatten for Grammar {
     fn flatten(&self, _: &Grammar, overrides: &mut BTreeMap<String, String>) -> Result<String> {
-        if !self.map.contains_key(&self.default_rule) {
-            return Err(Error::MissingKeyError(format!(
-                "Grammar does not contain key {}",
-                self.default_rule
-            )));
-        }
-
         match self.map.get(&self.default_rule) {
             Some(rules) => {
                 let mut rng = rand::thread_rng();
                 let rule = rules.choose(&mut rng).unwrap();
                 rule.flatten(&self, overrides)
             }
-            None => Ok("".to_string()),
+            None => Err(Error::MissingKeyError(format!(
+                "Grammar does not contain key {}",
+                self.default_rule
+            ))),
         }
     }
 }
