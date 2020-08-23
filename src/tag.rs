@@ -68,10 +68,12 @@ impl Tag {
         self.actions = actions;
         self
     }
+
     pub fn with_modifiers<S: Into<String>>(mut self, modifiers: Vec<S>) -> Tag {
         self.modifiers = modifiers.into_iter().map(|s| s.into()).collect();
         self
     }
+
     pub fn parse(s: &str) -> Result<Tag> {
         Ok(parse_tag(s)?)
     }
