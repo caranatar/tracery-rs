@@ -193,4 +193,11 @@ mod tests {
             Err(e) => println!("Error was {}", e),
         };
     }
+
+    #[test]
+    fn malformed_json() {
+        let input = r#"{ "a": ["a"],}"#;
+        let res = from_json(input);
+        assert!(matches!(res, Err(crate::Error::JsonError(_))));
+    }
 }

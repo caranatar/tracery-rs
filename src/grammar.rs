@@ -230,7 +230,7 @@ mod tests {
         }"#;
         let g = Grammar::from_json(input)?;
         let res = g.flatten(&g, &mut BTreeMap::new());
-        assert!(res.is_err());
+        assert!(matches!(res, Err(Error::MissingKeyError(_))));
 
         Ok(())
     }
