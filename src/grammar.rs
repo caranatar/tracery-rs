@@ -327,5 +327,7 @@ mod tests {
         assert_eq!(c("story"), "storied");
 
         assert_eq!(c("blame"), "blamed");
+
+        assert_eq!(c("\t"), "\t");
     }
 }
