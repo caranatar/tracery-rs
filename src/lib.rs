@@ -6,33 +6,48 @@
 //!
 //! Example:
 //!
-//! ```ignore
+//! ```
+//! # use tracery::{from_json, Flatten, Result};
+//! # use std::collections::BTreeMap;
+//! # fn main() -> Result<()> {
 //! let source = r##"
 //! {
-//!     "origin": ["foo #bar#", "#baz# quux #quuux#"],
+//!     "origin": ["foo #bar#", "#baz# quux #qux#"],
 //!     "bar": ["bar", "BAR"],
-//!     "baz": ["baz", "BaZ", "bAAZ"],
-//!     "quuux": ["quick brown fox", "lazy dog"]
+//!     "baz": ["baz", "BaZ", "bAZ"],
+//!     "qux": ["qux", "QUX"]
 //! }
 //! "##;
 //!
 //! let grammar = tracery::from_json(source).unwrap();
-//! println!(grammar.flatten()) // => starting from the "origin" rule (which is selected by
-//!                             //    default), fills in random
-//!                             //    entries from the "bar", "baz", and "quuux" rules,
-//!                             //    where called for in the "origin" text.
+//! // Starting from the "origin" rule, which is selected by default, fills in
+//! // random entries from the "bar", "baz", and "qux" rules, where called for
+//! // in the "origin" text:
+//! let flattened = grammar.flatten(&grammar, &mut BTreeMap::new())?;
+//! let matches = flattened.eq_ignore_ascii_case("foo bar") || flattened.eq_ignore_ascii_case("baz quux qux");
+//! assert!(matches);
+//! # Ok(())
+//! # }
 //! ```
 //! or, even shorter:
 //!
-//! ```ignore
+//! ```
+//! # use tracery::{flatten, Flatten, Result};
+//! # use std::collections::BTreeMap;
+//! # fn main() -> Result<()> {
 //! let source = r##"
 //! {
-//!     "origin": ["foo #bar#", "#baz# quux #quuux#"],
+//!     "origin": ["foo #bar#", "#baz# quux #qux#"],
 //!     "bar": ["bar", "BAR"],
-//!     "baz": ["baz", "BaZ", "bAAZ"],
-//!     "quuux": ["quick brown fox", "lazy dog"]
-//! }"##;
-//! tracery::flatten(source).unwrap();
+//!     "baz": ["baz", "BaZ", "bAZ"],
+//!     "qux": ["qux", "QUX"]
+//! }
+//! "##;
+//! let flattened = tracery::flatten(source)?;
+//! let matches = flattened.eq_ignore_ascii_case("foo bar") || flattened.eq_ignore_ascii_case("baz quux qux");
+//! assert!(matches);
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! So, in the example above, we might end up with `"foo bar"` or `"BaZ quux lazy dog"`, etc
@@ -42,9 +57,19 @@
 //! In the example above, we used `Grammar.flatten`, but that is a convenience function that
 //! does the following:
 //!
-//! ```ignore
-//! let grammar = tracery::from_json(source).unwrap();
-//! let flattened = grammar.flatten();
+//! ```
+//! # use tracery::{from_json, Flatten, Grammar, Result};
+//! # use std::collections::BTreeMap;
+//! # fn main() -> Result<()> {
+//! let grammar = tracery::from_json(r##"{
+//!   "origin": [ "#foo# is #bar#" ],
+//!   "foo": [ "tracery" ],
+//!   "bar": [ "fun" ]
+//! }"##)?;
+//! let flattened = grammar.flatten(&grammar, &mut BTreeMap::new())?;
+//! assert_eq!(flattened, "tracery is fun");
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! `.from_json` will parse the rule set out into a tree-like structure, and `.flatten` collapses that
@@ -55,32 +80,30 @@
 //! Tracery allows for more than just word replacement. You can attach "actions" and "modifiers" to
 //! rules as well. There are quite a few modifiers built-in to this library. Here is one:
 //!
-//! ```ignore
+//! ```
+//! # use tracery::{from_json, Flatten, Grammar, Result};
+//! # use std::collections::BTreeMap;
+//! # fn main() -> Result<()> {
 //! let source = r##"
 //! {
 //!     "origin": ["this word is in plural form: #noun.s#"],
-//!     "noun": ["apple", "bear", "cat", "dog", "equine", "fish", "garbage"]
+//!     "noun": ["apple"]
 //! }"##;
 //!
-//! let grammar = tracery::from_json(source).unwrap();
-//! println!(grammar.flatten());
+//! let grammar = tracery::from_json(source)?;
+//! let flattened = grammar.flatten(&grammar, &mut BTreeMap::new())?;
+//! assert_eq!("this word is in plural form: apples", flattened);
+//! # Ok(())
+//! # }
 //! ```
-//!
-//! This will generate sentences like:
-//!
-//! > "this word is in plural form: bears"
-//!
-//! or
-//!
-//! > "this word is in plural form: fishes"
-//!
-//! etc...
 //!
 //! Actions allow you to, for example, lock in a specific value for a `#tag#`, so that you can refer to it multiple
 //! times in your story. Here is an example (modified from @galaxykate's official tutorial
 //! http://www.crystalcodepalace.com/traceryTut.html)
 //!
-//! ```ignore
+//! ```
+//! # use tracery::{flatten, Result};
+//! # fn main() -> Result<()> {
 //! let source = r##"{
 //!     "name": ["Arjun","Yuuma","Darcy","Mia","Chiaki","Izzi","Azra","Lina"],
 //!     "animal": ["unicorn","raven","sparrow","scorpion","coyote","eagle","owl","lizard","zebra","duck","kitten"],
@@ -88,6 +111,9 @@
 //!     "story": ["#hero# traveled with her pet #heroPet#.  #hero# was never #mood#, for the #heroPet# was always too #mood#."],
 //!     "origin": ["#[hero:#name#][heroPet:#animal#]story#"]
 //! }"##;
+//! println!("{}", tracery::flatten(source)?);
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! We see, in the "origin" rule, the use of actions to lock-in the value of `#hero#` and
@@ -103,11 +129,12 @@ pub use crate::flatten::Flatten;
 mod grammar;
 pub use crate::grammar::Grammar;
 mod node;
-use crate::node::Node;
+pub use crate::node::Node;
 mod parser;
 mod rule;
-use crate::rule::Rule;
+pub use crate::rule::Rule;
 mod tag;
+pub use crate::tag::Tag;
 
 /// Creates a new grammar from a JSON grammar string
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {

@@ -11,17 +11,24 @@ use std::collections::BTreeMap;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # use tracery::{Node, Result, Rule, Tag};
+/// # fn main() -> Result<()> {
 /// let nodes = vec![
 ///     Node::Tag(Tag::new("one")),
-///     Node::Text(" is the loneliest number".into()),
+///     Node::Text(" is the loneliest number".to_string()),
 /// ];
+/// let rule = Rule::new(nodes);
 ///
-/// assert_eq!(parser::parse_str("#one# is the loneliest number").unwrap(), nodes);
+/// assert_eq!(Rule::parse("#one# is the loneliest number")?, rule);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug, PartialEq, Clone)]
 pub enum Node {
+    /// A tag (a key surrounded by '#'s)
     Tag(Tag),
+    /// Plain text
     Text(String),
 }
 
@@ -34,16 +41,6 @@ impl From<Tag> for Node {
 impl From<String> for Node {
     fn from(s: String) -> Node {
         Node::Text(s)
-    }
-}
-
-impl Node {
-    pub fn tag(s: &str) -> Result<Node> {
-        Ok(Node::Tag(Tag::parse(s)?))
-    }
-
-    pub fn text(s: &str) -> Node {
-        Node::Text(s.to_string())
     }
 }
 
@@ -63,17 +60,6 @@ impl Flatten for Node {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn construction() -> Result<()> {
-        let tag = Tag::parse("#a#")?;
-        assert_eq!(Node::Tag(tag), Node::tag("#a#")?);
-        
-        let text = "abc".to_string();
-        assert_eq!(Node::Text(text), Node::text("abc"));
-
-        Ok(())
-    }
     
     #[test]
     fn conversion() -> Result<()> {

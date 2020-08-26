@@ -22,6 +22,7 @@ pub struct Tag {
 }
 
 impl Tag {
+    /// Creates a tag with the given key and no associated actions or modifiers
     pub fn new<S: Into<String>>(key: S) -> Tag {
         Tag {
             key: key.into(),
@@ -54,6 +55,8 @@ impl Tag {
         )))
     }
 
+    /// Applies the modifiers associated with this Tag to a given string, using
+    /// the definitions in the given Grammar
     pub fn apply_modifiers(&self, s: &str, grammar: &Grammar) -> String {
         let mut string = String::from(s);
         for modifier in self.modifiers.iter() {
@@ -64,16 +67,19 @@ impl Tag {
         string
     }
 
+    /// Adds the given actions to this tag
     pub fn with_actions(mut self, actions: BTreeMap<String, Rule>) -> Tag {
         self.actions = actions;
         self
     }
 
+    /// Adds the given modifiers to this tag
     pub fn with_modifiers<S: Into<String>>(mut self, modifiers: Vec<S>) -> Tag {
         self.modifiers = modifiers.into_iter().map(|s| s.into()).collect();
         self
     }
 
+    /// Parses a tag object from the given string
     pub fn parse(s: &str) -> Result<Tag> {
         Ok(parse_tag(s)?)
     }
