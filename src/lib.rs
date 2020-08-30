@@ -128,6 +128,7 @@ mod flatten;
 pub use crate::flatten::Flatten;
 mod grammar;
 pub use crate::grammar::Grammar;
+mod modifiers;
 mod node;
 pub use crate::node::Node;
 mod parser;
