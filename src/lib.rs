@@ -128,12 +128,11 @@ mod grammar;
 pub use crate::grammar::Grammar;
 mod modifiers;
 mod node;
-pub use crate::node::Node;
+use crate::node::Node;
 mod parser;
 mod rule;
-pub use crate::rule::Rule;
+use crate::rule::Rule;
 mod tag;
-pub use crate::tag::Tag;
 
 /// Creates a new grammar from a JSON grammar string
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {

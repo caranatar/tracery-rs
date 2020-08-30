@@ -60,19 +60,6 @@ impl Grammar {
         self
     }
 
-    /// Adds a rule with the given key and list of rules to the `Grammar`
-    ///
-    /// # Returns
-    /// `Ok(())` on success
-    /// [`Error`] otherwise
-    ///
-    /// [`Error`]: enum.Error.html
-    pub fn add_rules<S: Into<String>>(&mut self, name: S, rules: Vec<Rule>) -> Result<()> {
-        self.map.insert(name.into(), rules);
-        Ok(())
-    }
-}
-
     pub fn flatten<R: ?Sized + Rng>(&self, rng: &mut R) -> Result<String> {
         match self.map.get(&self.default_rule) {
             Some(rules) => {

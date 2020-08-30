@@ -31,7 +31,7 @@ fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
     Ok(TRule::new(nodes))
 }
 
-pub fn parse_str<S: AsRef<str>>(s: S) -> Result<TRule, Error> {
+pub(crate) fn parse_str<S: AsRef<str>>(s: S) -> Result<TRule, Error> {
     parse_rule(s).map_err(|e| Error::ParseError(format!("{}", e)))
 }
 
@@ -80,14 +80,13 @@ fn parse_tag_pair(s: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
         .with_modifiers(modifiers))
 }
 
-fn parse_tag_str<S: AsRef<str>>(s: S) -> Result<Tag, PestError> {
-    let parsed_tag = TraceryParser::parse(Rule::tag, s.as_ref())?.next().unwrap();
-
-    parse_tag_pair(parsed_tag)
-}
-
-pub fn parse_tag<S: AsRef<str>>(s: S) -> Result<Tag, Error> {
-    parse_tag_str(s).map_err(|e| Error::ParseError(format!("{}", e)))
+#[cfg(test)]
+pub(crate) fn parse_tag<S: AsRef<str>>(s: S) -> Result<Tag, Error> {
+    let tag_pair = TraceryParser::parse(Rule::tag, s.as_ref())
+        .map_err(|e| Error::ParseError(format!("{}", e)))?
+        .next()
+        .unwrap();
+    parse_tag_pair(tag_pair).map_err(|e| Error::ParseError(format!("{}", e)))
 }
 
 #[cfg(test)]
@@ -199,8 +198,8 @@ mod tests {
     fn parse_tag_multi_action() -> Result<(), Error> {
         let src = "#[one:#two#][three:#four#]tagname.s.capitalize#";
         let mut actions = BTreeMap::new();
-        actions.insert("one".to_string(), TRule::parse("#two#").unwrap());
-        actions.insert("three".to_string(), TRule::parse("#four#").unwrap());
+        actions.insert("one".to_string(), parse_str("#two#").unwrap());
+        actions.insert("three".to_string(), parse_str("#four#").unwrap());
         let tag = parse_tag(src)?;
         assert_eq!(
             tag,
