@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 //! Rust port of `tracery`
 //!
 //! This library is a port of https://github.com/galaxykate/tracery, which implements Generative
