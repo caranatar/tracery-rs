@@ -7,7 +7,7 @@ use crate::{parser::parse_str, Error, Flatten, Result, Rule};
 ///
 /// This is the main data type used with this library.
 pub struct Grammar {
-    map: BTreeMap<String, Vec<Rule>>,
+    map: BTreeMap<String, Vec<Vec<Rule>>>,
     default_rule: String,
     modifier_registry: BTreeMap<String, Box<dyn Fn(&str) -> String>>,
 }
@@ -35,8 +35,8 @@ impl Grammar {
     }
 
     /// Gets a rule with the given key, if it exists
-    pub fn get_rule(&self, key: &str) -> Option<&Vec<Rule>> {
-        self.map.get(key)
+    pub(crate) fn get_rule(&self, key: &str) -> Option<&Vec<Rule>> {
+        self.map.get(key).and_then(|stack| stack.last())
     }
 
     /// Creates a new grammar from a JSON grammar string
@@ -45,7 +45,7 @@ impl Grammar {
         let mut me = Grammar::new();
         for (key, value) in source.into_iter() {
             let rules: Vec<Rule> = value.iter().map(parse_str).collect::<Result<Vec<_>>>()?;
-            me.add_rules(key, rules)?;
+            me.map.insert(key, vec![ rules ]);
         }
         Ok(me)
     }
