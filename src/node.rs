@@ -45,14 +45,15 @@ impl From<String> for Node {
 }
 
 impl Flatten for Node {
-    fn flatten(
+    fn flatten<R: ?Sized + rand::Rng>(
         &self,
         grammar: &Grammar,
         overrides: &mut BTreeMap<String, String>,
+        rng: &mut R,
     ) -> Result<String> {
         match self {
-            Node::Tag(ref tag) => tag.flatten(grammar, overrides),
-            Node::Text(ref s) => s.flatten(grammar, overrides),
+            Node::Tag(ref tag) => tag.flatten(grammar, overrides, rng),
+            Node::Text(ref s) => s.flatten(grammar, overrides, rng),
         }
     }
 }

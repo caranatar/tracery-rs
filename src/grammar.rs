@@ -1,3 +1,4 @@
+use rand::{Rng, seq::SliceRandom};
 use std::collections::BTreeMap;
 use std::default::Default;
 
@@ -72,14 +73,12 @@ impl Grammar {
     }
 }
 
-impl Flatten for Grammar {
-    fn flatten(&self, _: &Grammar, overrides: &mut BTreeMap<String, String>) -> Result<String> {
+    pub fn flatten<R: ?Sized + Rng>(&self, rng: &mut R) -> Result<String> {
         match self.map.get(&self.default_rule) {
             Some(rules) => {
-                let mut rng = rand::thread_rng();
-                let rule = rules.choose(&mut rng).unwrap();
-                rule.flatten(&self, overrides)
-            }
+                let rule = rules.last().unwrap().choose(rng).unwrap();
+                rule.flatten(&self, &mut BTreeMap::new(), rng)
+            },
             None => Err(Error::MissingKeyError(format!(
                 "Grammar does not contain key {}",
                 self.default_rule
@@ -98,7 +97,7 @@ mod tests {
             "a": ["a", "aa", "aaa"]
         }"#;
         let g = Grammar::from_json(input)?;
-        let res = g.flatten(&g, &mut BTreeMap::new());
+        let res = g.flatten(&mut rand::thread_rng());
         assert!(matches!(res, Err(Error::MissingKeyError(_))));
 
         Ok(())
@@ -110,7 +109,7 @@ mod tests {
             "a": ["a", "aa", "aaa"]
         }"#;
         let g = Grammar::from_json(input)?.default_rule("a");
-        let res = g.flatten(&g, &mut BTreeMap::new())?;
+        let res = g.flatten(&mut rand::thread_rng())?;
         assert_eq!(res.chars().next().unwrap(), 'a');
 
         Ok(())

@@ -1,5 +1,6 @@
 use crate::{grammar::Grammar, parser::parse_tag, Error, Flatten, Result, Rule};
 use rand::seq::SliceRandom;
+use rand::{Rng, seq::SliceRandom};
 use std::collections::BTreeMap;
 
 /// Structure representing a `#tag#` in a tracery rule
@@ -38,15 +39,15 @@ impl Tag {
         &self,
         grammar: &Grammar,
         overrides: &mut BTreeMap<String, String>,
+        rng: &mut R
     ) -> Result<String> {
         if let Some(rule) = overrides.get(&self.key) {
             return Ok(rule.clone());
         }
 
         if let Some(rules) = grammar.get_rule(&self.key) {
-            let mut rng = rand::thread_rng();
-            let choice = rules.choose(&mut rng).unwrap();
-            return choice.flatten(grammar, overrides);
+            let choice = rules.choose(rng).unwrap();
+            return choice.flatten(grammar, overrides, rng);
         }
 
         Err(Error::MissingKeyError(format!(
@@ -86,14 +87,15 @@ impl Tag {
 }
 
 impl Flatten for Tag {
-    fn flatten(
+    fn flatten<R: ?Sized + Rng>(
         &self,
         grammar: &Grammar,
         overrides: &mut BTreeMap<String, String>,
+        rng: &mut R,
     ) -> Result<String> {
         let mut map = BTreeMap::new();
         for (label, rule) in self.actions.clone().into_iter() {
-            map.insert(label, rule.flatten(grammar, overrides)?);
+            map.insert(label, rule.flatten(grammar, overrides, rng)?);
         }
 
         // all children of this node need to have an `overrides` map with the
@@ -108,7 +110,7 @@ impl Flatten for Tag {
             overrides.insert(label, rule);
         }
 
-        let choice = self.get_rule(grammar, &mut overrides)?;
+        let choice = self.get_rule(grammar, &mut overrides, rng)?;
 
         let modified = self.apply_modifiers(&choice, grammar);
 
@@ -125,7 +127,7 @@ mod tests {
         let input = r#"{"a": ["b"]}"#;
         let g = Grammar::from_json(input)?;
         let tag = Tag::parse("#a#")?;
-        let r = tag.get_rule(&g, &mut BTreeMap::new())?;
+        let r = tag.get_rule(&g, &mut BTreeMap::new(), &mut rand::thread_rng())?;
         assert_eq!(r, "b");
         Ok(())
     }
@@ -138,10 +140,10 @@ mod tests {
         let mut overrides = BTreeMap::new();
         overrides.insert("a".to_string(), "c".to_string());
         overrides.insert("b".to_string(), "d".to_string());
-        let r = tag.get_rule(&g, &mut overrides)?;
+        let r = tag.get_rule(&g, &mut overrides, &mut rand::thread_rng())?;
         assert_eq!(r, "c");
         let tag = Tag::parse("#b#")?;
-        let r = tag.get_rule(&g, &mut overrides)?;
+        let r = tag.get_rule(&g, &mut overrides, &mut rand::thread_rng())?;
         assert_eq!(r, "d");
         Ok(())
     }
@@ -151,7 +153,7 @@ mod tests {
         let input = r#"{"a": ["b"]}"#;
         let g = Grammar::from_json(input)?;
         let tag = Tag::parse("#b#")?;
-        let r = tag.get_rule(&g, &mut BTreeMap::new());
+        let r = tag.get_rule(&g, &mut BTreeMap::new(), &mut rand::thread_rng());
         assert!(matches!(r, Err(Error::MissingKeyError(_))));
         Ok(())
     }

@@ -34,15 +34,16 @@ impl Rule {
 }
 
 impl Flatten for Rule {
-    fn flatten(
+    fn flatten<R: ?Sized + rand::Rng>(
         &self,
         grammar: &Grammar,
         overrides: &mut BTreeMap<String, String>,
+        rng: &mut R,
     ) -> Result<String> {
         let parts = self
             .0
             .iter()
-            .map(|n| n.flatten(grammar, overrides))
+            .map(|n| n.flatten(grammar, overrides, rng))
             .collect::<Result<Vec<String>>>()?;
         Ok(parts.join(""))
     }

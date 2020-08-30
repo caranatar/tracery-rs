@@ -7,7 +7,7 @@
 //! Example:
 //!
 //! ```
-//! # use tracery::{from_json, Flatten, Result};
+//! # use tracery::{from_json, Result};
 //! # use std::collections::BTreeMap;
 //! # fn main() -> Result<()> {
 //! let source = r##"
@@ -23,7 +23,7 @@
 //! // Starting from the "origin" rule, which is selected by default, fills in
 //! // random entries from the "bar", "baz", and "qux" rules, where called for
 //! // in the "origin" text:
-//! let flattened = grammar.flatten(&grammar, &mut BTreeMap::new())?;
+//! let flattened = grammar.flatten(&mut rand::thread_rng())?;
 //! let matches = flattened.eq_ignore_ascii_case("foo bar") || flattened.eq_ignore_ascii_case("baz quux qux");
 //! assert!(matches);
 //! # Ok(())
@@ -32,7 +32,7 @@
 //! or, even shorter:
 //!
 //! ```
-//! # use tracery::{flatten, Flatten, Result};
+//! # use tracery::{flatten, Result};
 //! # use std::collections::BTreeMap;
 //! # fn main() -> Result<()> {
 //! let source = r##"
@@ -58,7 +58,7 @@
 //! does the following:
 //!
 //! ```
-//! # use tracery::{from_json, Flatten, Grammar, Result};
+//! # use tracery::{from_json, Grammar, Result};
 //! # use std::collections::BTreeMap;
 //! # fn main() -> Result<()> {
 //! let grammar = tracery::from_json(r##"{
@@ -66,7 +66,7 @@
 //!   "foo": [ "tracery" ],
 //!   "bar": [ "fun" ]
 //! }"##)?;
-//! let flattened = grammar.flatten(&grammar, &mut BTreeMap::new())?;
+//! let flattened = grammar.flatten(&mut rand::thread_rng())?;
 //! assert_eq!(flattened, "tracery is fun");
 //! # Ok(())
 //! # }
@@ -81,7 +81,7 @@
 //! rules as well. There are quite a few modifiers built-in to this library. Here is one:
 //!
 //! ```
-//! # use tracery::{from_json, Flatten, Grammar, Result};
+//! # use tracery::{from_json, Grammar, Result};
 //! # use std::collections::BTreeMap;
 //! # fn main() -> Result<()> {
 //! let source = r##"
@@ -91,7 +91,7 @@
 //! }"##;
 //!
 //! let grammar = tracery::from_json(source)?;
-//! let flattened = grammar.flatten(&grammar, &mut BTreeMap::new())?;
+//! let flattened = grammar.flatten(&mut rand::thread_rng())?;
 //! assert_eq!("this word is in plural form: apples", flattened);
 //! # Ok(())
 //! # }
@@ -120,8 +120,6 @@
 //! `#heroPet#`, so that we can use those tags in the "story" rule, and know that the same
 //! generated value will be used in all cases.
 
-use std::collections::BTreeMap;
-
 mod error;
 pub use crate::error::Error;
 mod flatten;
@@ -145,7 +143,7 @@ pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
 /// Creates a new grammar from a JSON grammar string, then uses it to create a
 /// random output string
 pub fn flatten<S: AsRef<str>>(s: S) -> Result<String> {
-    from_json(s)?.flatten(&Grammar::new(), &mut BTreeMap::new())
+    from_json(s)?.flatten(&mut rand::thread_rng())
 }
 
 /// A convenience type for a `Result` of `T` or [`Error`]
@@ -156,9 +154,6 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 #[cfg(test)]
 mod tests {
     use super::from_json;
-    use crate::grammar::Grammar;
-    use crate::Flatten;
-    use std::collections::BTreeMap;
 
     #[test]
     fn test_flatten() {
@@ -177,7 +172,7 @@ mod tests {
             }"##;
         match from_json(source) {
             Ok(g) => {
-                g.flatten(&Grammar::new(), &mut BTreeMap::new()).unwrap();
+                g.flatten(&mut rand::thread_rng()).unwrap();
             }
             Err(e) => println!("Error was {}", e),
         };
