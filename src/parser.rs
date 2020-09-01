@@ -48,7 +48,6 @@ fn parse_action(a: pest::iterators::Pair<Rule>) -> Result<(String, TRule), PestE
             }
             _ => unreachable!(),
         }
-        println!("part of action => {:?}", part);
     }
 
     Ok((tagname.to_string(), rule.unwrap()))

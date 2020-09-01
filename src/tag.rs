@@ -104,11 +104,12 @@ impl Flatten for Tag {
 mod tests {
     use super::*;
     use crate::parser::parse_tag;
+    use maplit::hashmap;
 
     #[test]
     fn get_rule_from_grammar() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
+        let input = hashmap!{ "a" => vec!["b"] };
+        let g = Grammar::from_map(input)?;
         let tag = parse_tag("#a#")?;
         let r = tag.get_rule(&g, &mut BTreeMap::new(), &mut rand::thread_rng())?;
         assert_eq!(r, "b");
@@ -117,8 +118,8 @@ mod tests {
 
     #[test]
     fn get_rule_from_overrides() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
+        let input = hashmap!{ "a" => vec!["b"] };
+        let g = Grammar::from_map(input)?;
         let tag = parse_tag("#a#")?;
         let mut overrides = BTreeMap::new();
         overrides.insert("a".to_string(), "c".to_string());
@@ -133,8 +134,8 @@ mod tests {
 
     #[test]
     fn get_rule_missing_key() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
+        let input = hashmap!{ "a" => vec!["b"] };
+        let g = Grammar::from_map(input)?;
         let tag = parse_tag("#b#")?;
         let r = tag.get_rule(&g, &mut BTreeMap::new(), &mut rand::thread_rng());
         assert!(matches!(r, Err(Error::MissingKeyError(_))));
@@ -143,8 +144,8 @@ mod tests {
 
     #[test]
     fn apply_modifiers() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
+        let input = hashmap!{ "a" => vec!["b"] };
+        let g = Grammar::from_map(input)?;
         let tag = parse_tag("#b.capitalize#")?;
         let x = tag.apply_modifiers("x", &g);
         assert_eq!(x, "X");

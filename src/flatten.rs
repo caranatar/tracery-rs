@@ -16,9 +16,3 @@ pub trait Flatten {
         rng: &mut R
     ) -> Result<String>;
 }
-
-impl Flatten for String {
-    fn flatten<R: ?Sized + Rng>(&self, _: &Grammar, _: &mut BTreeMap<String, String>, _: &mut R) -> Result<String> {
-        Ok(self.to_owned())
-    }
-}

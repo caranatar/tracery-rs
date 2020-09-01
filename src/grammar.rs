@@ -1,4 +1,4 @@
-use rand::{Rng, seq::SliceRandom};
+use rand::{seq::SliceRandom, Rng};
 use std::collections::BTreeMap;
 use std::default::Default;
 
@@ -15,11 +15,10 @@ pub struct Grammar {
 
 impl Default for Grammar {
     fn default() -> Grammar {
-        let modifiers = crate::modifiers::get_default_modifiers();
         Grammar {
             map: BTreeMap::new(),
             default_rule: "origin".into(),
-            modifier_registry: modifiers,
+            modifier_registry: crate::modifiers::get_default_modifiers(),
         }
     }
 }
@@ -41,12 +40,13 @@ impl Grammar {
     }
 
     /// Creates a new grammar from a JSON grammar string
+    #[cfg(feature = "tracery_json")]
     pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
         let source: BTreeMap<String, Vec<String>> = serde_json::from_str(s.as_ref())?;
         let mut me = Grammar::new();
         for (key, value) in source.into_iter() {
             let rules: Vec<Rule> = value.iter().map(parse_str).collect::<Result<Vec<_>>>()?;
-            me.map.insert(key, vec![ rules ]);
+            me.map.insert(key, vec![rules]);
         }
         Ok(me)
     }
@@ -65,25 +65,50 @@ impl Grammar {
             Some(rules) => {
                 let rule = rules.last().unwrap().choose(rng).unwrap();
                 rule.flatten(&self, &mut BTreeMap::new(), rng)
-            },
+            }
             None => Err(Error::MissingKeyError(format!(
                 "Grammar does not contain key {}",
                 self.default_rule
             ))),
         }
     }
+
+    pub fn from_map<I, K, C, S>(iter: I) -> Result<Self>
+    where
+        I: IntoIterator<Item = (K, C)>,
+        K: Into<String>,
+        C: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let mut map: BTreeMap<String, Vec<Vec<Rule>>> = BTreeMap::new();
+
+        for (k, v) in iter {
+            let rules: Vec<Rule> = v
+                .into_iter()
+                .map(|x| parse_str(x.into()))
+                .collect::<Result<Vec<_>>>()?;
+            map.insert(k.into(), vec![rules]);
+        }
+
+        Ok(Grammar {
+            map,
+            default_rule: String::from("origin"),
+            modifier_registry: crate::modifiers::get_default_modifiers(),
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use maplit::hashmap;
 
     #[test]
     fn flatten_missing_key() -> Result<()> {
-        let input = r#"{
-            "a": ["a", "aa", "aaa"]
-        }"#;
-        let g = Grammar::from_json(input)?;
+        let input = hashmap! {
+            "a" => vec![ "a", "aa", "aaa" ]
+        };
+        let g = Grammar::from_map(input)?;
         let res = g.flatten(&mut rand::thread_rng());
         assert!(matches!(res, Err(Error::MissingKeyError(_))));
 
@@ -92,10 +117,23 @@ mod tests {
 
     #[test]
     fn set_default_rule() -> Result<()> {
-        let input = r#"{
-            "a": ["a", "aa", "aaa"]
+        let input = hashmap! {
+            "a" => vec![ "a", "aa", "aaa" ]
+        };
+        let g = Grammar::from_map(input)?.default_rule("a");
+        let res = g.flatten(&mut rand::thread_rng())?;
+        assert_eq!(res.chars().next().unwrap(), 'a');
+
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "tracery_json")]
+    fn from_json() -> Result<()> {
+        let x = r#"{
+            "origin": [ "a", "aa" ]
         }"#;
-        let g = Grammar::from_json(input)?.default_rule("a");
+        let g = Grammar::from_json(x)?;
         let res = g.flatten(&mut rand::thread_rng())?;
         assert_eq!(res.chars().next().unwrap(), 'a');
 

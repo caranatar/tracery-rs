@@ -34,7 +34,7 @@ impl Flatten for Node {
     ) -> Result<String> {
         match self {
             Node::Tag(ref tag) => tag.flatten(grammar, overrides, rng),
-            Node::Text(ref s) => s.flatten(grammar, overrides, rng),
+            Node::Text(ref s) => Ok(s.to_owned()),
         }
     }
 }
