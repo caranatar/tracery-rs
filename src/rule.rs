@@ -1,9 +1,7 @@
-use crate::Flatten;
+use crate::Execute;
 use crate::Grammar;
 use crate::Node;
 use crate::Result;
-
-use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Rule(pub(crate) Vec<Node>);
@@ -14,17 +12,16 @@ impl Rule {
     }
 }
 
-impl Flatten for Rule {
-    fn flatten<R: ?Sized + rand::Rng>(
+impl Execute for Rule {
+    fn execute<R: ?Sized + rand::Rng>(
         &self,
-        grammar: &Grammar,
-        overrides: &mut BTreeMap<String, String>,
-        rng: &mut R,
+        grammar: &mut Grammar,
+        rng: &mut R
     ) -> Result<String> {
         let parts = self
             .0
             .iter()
-            .map(|n| n.flatten(grammar, overrides, rng))
+            .map(|n| n.execute(grammar, rng))
             .collect::<Result<Vec<String>>>()?;
         Ok(parts.join(""))
     }

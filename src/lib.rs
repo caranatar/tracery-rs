@@ -122,8 +122,8 @@
 
 mod error;
 pub use crate::error::Error;
-mod flatten;
-pub use crate::flatten::Flatten;
+mod execute;
+pub(crate) use crate::execute::Execute;
 mod grammar;
 pub use crate::grammar::Grammar;
 mod modifiers;

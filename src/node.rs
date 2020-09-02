@@ -1,9 +1,7 @@
 use crate::tag::Tag;
-use crate::Flatten;
+use crate::Execute;
 use crate::Grammar;
 use crate::Result;
-
-use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum Node {
@@ -25,15 +23,14 @@ impl From<String> for Node {
     }
 }
 
-impl Flatten for Node {
-    fn flatten<R: ?Sized + rand::Rng>(
+impl Execute for Node {
+    fn execute<R: ?Sized + rand::Rng>(
         &self,
-        grammar: &Grammar,
-        overrides: &mut BTreeMap<String, String>,
-        rng: &mut R,
+        grammar: &mut Grammar,
+        rng: &mut R
     ) -> Result<String> {
         match self {
-            Node::Tag(ref tag) => tag.flatten(grammar, overrides, rng),
+            Node::Tag(ref tag) => tag.execute(grammar, rng),
             Node::Text(ref s) => Ok(s.to_owned()),
         }
     }

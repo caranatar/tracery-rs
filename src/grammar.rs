@@ -1,16 +1,18 @@
 use rand::{seq::SliceRandom, Rng};
 use std::collections::BTreeMap;
 use std::default::Default;
+use std::rc::Rc;
 
-use crate::{parser::parse_str, Error, Flatten, Result, Rule};
+use crate::{parser::parse_str, Error, Execute, Result, Rule};
 
 /// Represents a single grammar
 ///
 /// This is the main data type used with this library.
+#[derive(Clone)]
 pub struct Grammar {
     map: BTreeMap<String, Vec<Vec<Rule>>>,
     default_rule: String,
-    modifier_registry: BTreeMap<String, Box<dyn Fn(&str) -> String>>,
+    modifier_registry: BTreeMap<String, Rc<dyn Fn(&str) -> String>>,
 }
 
 impl Default for Grammar {
@@ -32,6 +34,22 @@ impl Grammar {
     /// Gets a single modifier with the given name, if it exists
     pub fn get_modifier(&self, modifier: &str) -> Option<&dyn Fn(&str) -> String> {
         self.modifier_registry.get(modifier).map(|x| x.as_ref())
+    }
+
+    /// Pushes a new rule onto the rule stack for a given key
+    pub(crate) fn push_rule(&mut self, key: String, rule_str: String) {
+        use crate::Node;
+        use std::collections::btree_map::Entry;
+        let rule = vec![Rule::new(vec![Node::from(rule_str)])];
+        match self.map.entry(key) {
+            Entry::Occupied(mut occ) => {
+                let stack = occ.get_mut();
+                stack.push(rule);
+            }
+            Entry::Vacant(vac) => {
+                vac.insert(vec![rule]);
+            }
+        }
     }
 
     /// Gets a rule with the given key, if it exists
@@ -61,16 +79,21 @@ impl Grammar {
     }
 
     pub fn flatten<R: ?Sized + Rng>(&self, rng: &mut R) -> Result<String> {
-        match self.map.get(&self.default_rule) {
-            Some(rules) => {
-                let rule = rules.last().unwrap().choose(rng).unwrap();
-                rule.flatten(&self, &mut BTreeMap::new(), rng)
-            }
+        self.clone().execute(&self.default_rule, rng)
+    }
+
+    pub fn execute<R>(&mut self, key: &String, rng: &mut R) -> Result<String>
+    where
+        R: ?Sized + Rng,
+    {
+        let rule = match self.map.get(key) {
+            Some(rules) => Ok(rules.last().unwrap().choose(rng).unwrap().clone()),
             None => Err(Error::MissingKeyError(format!(
                 "Grammar does not contain key {}",
                 self.default_rule
             ))),
-        }
+        }?;
+        rule.execute(self, rng)
     }
 
     pub fn from_map<I, K, C, S>(iter: I) -> Result<Self>
@@ -240,5 +263,52 @@ mod tests {
         assert_eq!(c("blame"), "blamed");
 
         assert_eq!(c("\t"), "\t");
+    }
+
+    #[test]
+    fn execute() -> Result<()> {
+        let input = hashmap!{
+            "origin" => vec!["#[foo:bar]baz#"],
+            "baz" => vec!["baz"]
+        };
+        let mut grammar = Grammar::from_map(input)?;
+
+        // The first invocation should produce the string baz from the rule baz
+        let origin = String::from("origin");
+        assert_eq!("baz", grammar.execute(&origin, &mut rand::thread_rng())?);
+
+        // It should have also produced a new rule foo with the value bar
+        let origin = String::from("foo");
+        assert_eq!("bar", grammar.execute(&origin, &mut rand::thread_rng())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn execute_function() -> Result<()> {
+        let input = hashmap!{
+            "origin" => vec!["#setFoo##baz#"],
+            "setFoo" => vec!["[foo:bar][bar:#[qux:quux]baz#]"],
+            "baz" => vec!["baz"]
+        };
+        let mut grammar = Grammar::from_map(input)?;
+
+        // The first invocation should produce the string baz from the rule baz
+        let origin = String::from("origin");
+        assert_eq!("baz", grammar.execute(&origin, &mut rand::thread_rng())?);
+
+        // It should have also produced a new rule foo with the value bar
+        let origin = String::from("foo");
+        assert_eq!("bar", grammar.execute(&origin, &mut rand::thread_rng())?);
+
+        // ..and a new rule bar with the value baz
+        let origin = String::from("bar");
+        assert_eq!("baz", grammar.execute(&origin, &mut rand::thread_rng())?);
+
+        // ..aaaand a new rule qux with the value quux
+        let origin = String::from("qux");
+        assert_eq!("quux", grammar.execute(&origin, &mut rand::thread_rng())?);
+
+        Ok(())
     }
 }

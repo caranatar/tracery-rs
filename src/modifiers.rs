@@ -1,8 +1,9 @@
 use inflector::string::pluralize;
 
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
-pub(crate) fn get_default_modifiers() -> BTreeMap<String, Box<dyn Fn(&str) -> String>> {
+pub(crate) fn get_default_modifiers() -> BTreeMap<String, Rc<dyn Fn(&str) -> String>> {
     let mut modifiers = BTreeMap::new();
     let capitalize = |s: &str| {
         let mut iter = s.chars();
@@ -15,32 +16,32 @@ pub(crate) fn get_default_modifiers() -> BTreeMap<String, Box<dyn Fn(&str) -> St
     };
     modifiers.insert(
         "capitalize".into(),
-        Box::new(capitalize) as Box<dyn Fn(&str) -> String>,
+        Rc::new(capitalize) as Rc<dyn Fn(&str) -> String>,
     );
     modifiers.insert(
         "capitalizeAll".into(),
-        Box::new(move |s: &str| {
+        Rc::new(move |s: &str| {
             use split_preserve::SplitPreserveWS;
             SplitPreserveWS::new(s).map_words(capitalize).collect()
-        }) as Box<dyn Fn(&str) -> String>,
+        }) as Rc<dyn Fn(&str) -> String>,
     );
     modifiers.insert(
         "inQuotes".into(),
-        Box::new(|s: &str| format!("\"{}\"", s)) as Box<dyn Fn(&str) -> String>,
+        Rc::new(|s: &str| format!("\"{}\"", s)) as Rc<dyn Fn(&str) -> String>,
     );
     modifiers.insert(
         "comma".into(),
-        Box::new(|s: &str| {
+        Rc::new(|s: &str| {
             if s.ends_with(',') || s.ends_with('.') || s.ends_with('!') || s.ends_with('?') {
                 s.to_string()
             } else {
                 format!("{},", s)
             }
-        }) as Box<dyn Fn(&str) -> String>,
+        }) as Rc<dyn Fn(&str) -> String>,
     );
     modifiers.insert(
         "s".into(),
-        Box::new(|s: &str| pluralize::to_plural(s)) as Box<dyn Fn(&str) -> String>,
+        Rc::new(|s: &str| pluralize::to_plural(s)) as Rc<dyn Fn(&str) -> String>,
     );
     let is_vowel = |c: char| -> bool {
         match c {
@@ -50,7 +51,7 @@ pub(crate) fn get_default_modifiers() -> BTreeMap<String, Box<dyn Fn(&str) -> St
     };
     modifiers.insert(
         "a".into(),
-        Box::new(move |s: &str| {
+        Rc::new(move |s: &str| {
             format!(
                 "{} {}",
                 match s.chars().next().map(is_vowel) {
@@ -59,7 +60,7 @@ pub(crate) fn get_default_modifiers() -> BTreeMap<String, Box<dyn Fn(&str) -> St
                 },
                 s
             )
-        }) as Box<dyn Fn(&str) -> String>,
+        }) as Rc<dyn Fn(&str) -> String>,
     );
 
     // Gets a char offset -n from the end. Returns None if n is larger than
@@ -73,7 +74,7 @@ pub(crate) fn get_default_modifiers() -> BTreeMap<String, Box<dyn Fn(&str) -> St
     };
     modifiers.insert(
         "ed".into(),
-        Box::new(move |s: &str| {
+        Rc::new(move |s: &str| {
             use split_preserve::{SplitPreserveWS, Token};
             // Split, preserving whitespace
             let mut iter = SplitPreserveWS::new(s);
@@ -113,7 +114,7 @@ pub(crate) fn get_default_modifiers() -> BTreeMap<String, Box<dyn Fn(&str) -> St
 
             // Stitch prefix, first, and rest together into one String
             format!("{}{}{}", prefix, first, rest,)
-        }) as Box<dyn Fn(&str) -> String>,
+        }) as Rc<dyn Fn(&str) -> String>,
     );
     modifiers
 }
