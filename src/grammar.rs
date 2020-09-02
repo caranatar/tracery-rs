@@ -336,4 +336,20 @@ mod tests {
         assert_eq!("bazbar", grammar.execute(&String::from("origin"), &mut rand::thread_rng())?);
         Ok(())
     }
+
+    #[test]
+    fn pop_and_remove() -> Result<()> {
+        let input = hashmap! {
+            "origin" => vec!["#foo##popFoo#"],
+            "foo" => vec!["bar"],
+            "popFoo" => vec!["[foo:POP]"]
+        };
+        let mut grammar = Grammar::from_map(input)?;
+        let mut rng = rand::thread_rng();
+        let origin = String::from("origin");
+        assert_eq!("bar", grammar.execute(&origin, &mut rng)?);
+        let origin = String::from("foo");
+        assert!(matches!(grammar.execute(&origin, &mut rng), Err(Error::MissingKeyError(_))));
+        Ok(())
+    }
 }
