@@ -3,6 +3,7 @@ use std::error::Error as StdError;
 
 /// The `tracery` error type
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum Error {
     /// Error encountered while parsing a rule
     ParseError(String),
