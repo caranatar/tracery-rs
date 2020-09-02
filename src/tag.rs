@@ -74,9 +74,13 @@ impl Tag {
 
 impl Execute for Tag {
     fn execute<R: ?Sized + Rng>(&self, grammar: &mut Grammar, rng: &mut R) -> Result<String> {
-        for (label, rule) in self.actions.clone().into_iter() {
-            let output = rule.execute(grammar, rng)?;
-            grammar.push_rule(label, output);
+        for (label, rule) in &self.actions {
+            if rule.is_pop() {
+                grammar.pop_rule(label.clone());
+            } else {
+                let output = rule.execute(grammar, rng)?;
+                grammar.push_rule(label.clone(), output);
+            }
         }
 
         let choice = self.get_rule(grammar, rng)?;

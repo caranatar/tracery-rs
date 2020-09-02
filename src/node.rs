@@ -11,6 +11,15 @@ pub(crate) enum Node {
     Text(String),
 }
 
+impl Node {
+    pub(crate) fn text(&self) -> Option<&String> {
+        match self {
+            Node::Tag(_) => None,
+            Node::Text(s) => Some(s),
+        }
+    }
+}
+
 impl From<Tag> for Node {
     fn from(tag: Tag) -> Node {
         Node::Tag(tag)

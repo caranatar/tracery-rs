@@ -52,6 +52,20 @@ impl Grammar {
         }
     }
 
+    /// Pops a rule off the rule stack for a given key, removing the key
+    /// entirely if there are no rules left
+    pub(crate) fn pop_rule(&mut self, key: String) {
+        use std::collections::btree_map::Entry;
+        if let Entry::Occupied(mut occ) = self.map.entry(key) {
+            let stack = occ.get_mut();
+            if stack.len() < 2 {
+                occ.remove_entry();
+            } else {
+                stack.pop();
+            }
+        }
+    }
+
     /// Gets a rule with the given key, if it exists
     pub(crate) fn get_rule(&self, key: &str) -> Option<&Vec<Rule>> {
         self.map.get(key).and_then(|stack| stack.last())
@@ -309,6 +323,17 @@ mod tests {
         let origin = String::from("qux");
         assert_eq!("quux", grammar.execute(&origin, &mut rand::thread_rng())?);
 
+        Ok(())
+    }
+
+    #[test]
+    fn pop_rule() -> Result<()> {
+        let input = hashmap! {
+            "origin" => vec!["#[foo:baz]foo##[foo:POP]foo#"],
+            "foo" => vec!["bar"]
+        };
+        let mut grammar = Grammar::from_map(input)?;
+        assert_eq!("bazbar", grammar.execute(&String::from("origin"), &mut rand::thread_rng())?);
         Ok(())
     }
 }
