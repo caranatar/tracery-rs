@@ -1,4 +1,6 @@
-rule = ${ (tag | text)+ }
+rule = ${ (actions | (tag | text)+) }
+
+actions = ${ (action)+ }
 
 tag = ${ "#" ~ (action)* ~ tagname ~ (modifier)* ~ "#" }
 

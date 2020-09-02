@@ -23,6 +23,7 @@ fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
         match p.as_rule() {
             Rule::text => acc.push(Node::Text(p.as_str().to_string())),
             Rule::tag => acc.push(Node::Tag(parse_tag_pair(p)?)),
+            Rule::actions => acc.push(Node::Tag(parse_actions(p)?)),
             _ => unreachable!(),
         }
         Ok(acc)
@@ -33,6 +34,20 @@ fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
 
 pub(crate) fn parse_str<S: AsRef<str>>(s: S) -> Result<TRule, Error> {
     parse_rule(s).map_err(|e| Error::ParseError(format!("{}", e)))
+}
+
+fn parse_actions(a: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
+    let actions = a.into_inner().try_fold(BTreeMap::new(), |mut acc, p| {
+        match p.as_rule() {
+            Rule::action => {
+                let (label, rule) = parse_action(p)?;
+                acc.insert(label, rule);
+            },
+            _ => unreachable!()
+        }
+        Ok(acc)
+    })?;
+    Ok(Tag::empty().with_actions(actions))
 }
 
 fn parse_action(a: pest::iterators::Pair<Rule>) -> Result<(String, TRule), PestError> {
@@ -95,7 +110,7 @@ mod tests {
     #[test]
     fn parse_tagname() -> Result<(), Error> {
         let tag = parse_tag("#one#")?;
-        assert_eq!(tag.key, "one");
+        assert_eq!(tag.key.unwrap(), "one");
         Ok(())
     }
 
@@ -110,7 +125,7 @@ mod tests {
     #[test]
     fn parse_tag_with_tag_action() -> Result<(), Error> {
         let mut tag = parse_tag("#[one:#two#]tagname#")?;
-        assert_eq!(tag.key, "tagname");
+        assert_eq!(tag.key.unwrap(), "tagname");
         assert_eq!(tag.actions.len(), 1);
         let action = tag.actions.entry("one".to_string());
         if let std::collections::btree_map::Entry::Occupied(e) = action {
@@ -124,7 +139,7 @@ mod tests {
     #[test]
     fn parse_tag_with_text_action() -> Result<(), Error> {
         let mut tag = parse_tag("#[one:a:b.c d]tagname#")?;
-        assert_eq!(tag.key, "tagname");
+        assert_eq!(tag.key.unwrap(), "tagname");
         assert_eq!(tag.actions.len(), 1);
         let action = tag.actions.entry("one".to_string());
         if let std::collections::btree_map::Entry::Occupied(e) = action {
@@ -138,7 +153,7 @@ mod tests {
     #[test]
     fn parse_tag_with_modifiers() -> Result<(), Error> {
         let tag = parse_tag("#one.two.three#")?;
-        assert_eq!(tag.key, "one");
+        assert_eq!(tag.key.unwrap(), "one");
         assert_eq!(tag.modifiers, vec!["two", "three"]);
         Ok(())
     }
@@ -146,7 +161,7 @@ mod tests {
     #[test]
     fn parse_tag_complicated() -> Result<(), Error> {
         let tag = parse_tag("#[e:#[a:#b.c#]d#][f:#g.h#]i.j.k#")?;
-        assert_eq!(tag.key, "i");
+        assert_eq!(tag.key.unwrap(), "i");
         assert_eq!(tag.modifiers, vec!["j", "k"]);
         Ok(())
     }
