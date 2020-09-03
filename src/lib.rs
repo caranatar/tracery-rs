@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_flatten_map() {
-        let source = hashmap!{
+        let source = hashmap! {
             "origin" => vec!["foo #bar#"],
             "bar" => vec!["bar"]
         };
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn test_map_with_actions() -> Result<()> {
-        let source = hashmap!{
+        let source = hashmap! {
             "name" => vec!["Arjun","Yuuma","Darcy","Mia","Chiaki","Izzi","Azra","Lina"],
             "animal" => vec!["unicorn","raven","sparrow","scorpion","coyote","eagle","owl","lizard","zebra","duck","kitten"],
             "mood" => vec!["vexed","indignant","impassioned","wistful","astute","courteous"],
@@ -247,7 +247,7 @@ mod tests {
 
     #[test]
     fn test_malformed_input() {
-        let input = hashmap!{ "a" => vec!["#a"]};
+        let input = hashmap! { "a" => vec!["#a"]};
         let res = from_map(input);
         assert!(matches!(res, Err(crate::Error::ParseError(_))));
     }
