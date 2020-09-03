@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 //! Rust port of `tracery`
 //!
 //! This library is a port of https://github.com/galaxykate/tracery, which implements Generative
@@ -148,6 +148,43 @@ macro_rules! grammar_item {
     };
 }
 
+/// Convenience macro that allows for shorthand creation of [`Grammar`]s.
+///
+/// Accepts input in the form `"key" => [ "list", "of", "rules" ]` or, in the
+/// case of a key having only one rule, `"key" => "rule"`. Equivalent to
+/// manually building a map and then calling [`Grammar::from_map`]
+///
+/// # Returns
+/// Result<[`Grammar`], [`Error`]>
+///
+/// # Example
+///
+/// ```
+/// # use tracery::{grammar, Result};
+/// # fn main() -> Result<()> {
+/// // Declare the grammar
+/// let g = grammar! {
+///     "origin" => "#tool# is #description#!",
+///     "tool" => "tracery",
+///     "description" => [ "fun", "awesome" ]
+/// }?;
+///
+/// // Randomly produce the string "tracery is fun!" or "tracery is awesome!"
+/// # let output =
+/// g.flatten(&mut rand::thread_rng())?;
+///
+/// # assert!(match output.as_str() {
+/// #     "tracery is fun!" | "tracery is awesome!" => true,
+/// #     _ => false,
+/// # });
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Error`]: enum.Error.html
+/// [`Grammar`]: struct.Grammar.html
+/// [`Grammar::from_map`]: struct.Grammar.html#method.from_map
+/// [`Result`]: type.Result.html
 #[macro_export]
 macro_rules! grammar {
     ($($input: tt)+) => {

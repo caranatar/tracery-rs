@@ -92,10 +92,32 @@ impl Grammar {
         self
     }
 
+    /// Attempts to use the Grammar to produce an output String.
+    ///
+    /// This method clones the Grammar, so any changes made in the course of
+    /// producing an output string (such as pushing a new rule onto a stack
+    /// using a labeled action such as `[foo:bar]`) will be discarded after
+    /// the output is produced.
+    ///
+    /// If you wish to preserve changes use [`execute`]
+    ///
+    /// [`execute`]: struct.Grammar.html#method.execute
     pub fn flatten<R: ?Sized + Rng>(&self, rng: &mut R) -> Result<String> {
         self.clone().execute(&self.default_rule, rng)
     }
 
+    /// Attempts to use the Grammar to produce an output String, preserving any
+    /// side effects that occur while doing so.
+    ///
+    /// This method produces an output string, but preserves any changes made to
+    /// the Grammar in the course of doing so. For instance, if a labeled action
+    /// such as `[foo:bar]` is executed, then the Grammar will maintain that
+    /// rule after this method returns.
+    ///
+    /// If you wish to produce an output String without preserving changes, used
+    /// [`flatten`].
+    ///
+    /// [`flatten`]: struct.Grammar.html#method.flatten
     pub fn execute<R>(&mut self, key: &String, rng: &mut R) -> Result<String>
     where
         R: ?Sized + Rng,
@@ -110,6 +132,12 @@ impl Grammar {
         rule.execute(self, rng)
     }
 
+    /// Creates a new Grammar from an input map of keys to rule lists
+    ///
+    /// # Notes
+    /// Any object implementing
+    /// `IntoIterator<Item = (Into<String>, Into<Vec<Into<String>>>)>` will be
+    /// accepted by this function, despite its name
     pub fn from_map<I, K, C, S>(iter: I) -> Result<Self>
     where
         I: IntoIterator<Item = (K, C)>,
