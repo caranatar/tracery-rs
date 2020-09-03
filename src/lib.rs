@@ -134,6 +134,31 @@ mod rule;
 use crate::rule::Rule;
 mod tag;
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! grammar_item {
+    ($map:ident, ) => {};
+    ($map:ident, $key:literal => [$($value: literal),+ $(,)?] $(, $($rest: tt)*)?) => {
+        $map.insert($key, vec!($($value,)+));
+        $($crate::grammar_item!($map, $($rest)*))?
+    };
+    ($map:ident, $key:literal => $value: literal $(, $($rest: tt)*)?) => {
+        $map.insert($key, vec!($value));
+        $($crate::grammar_item!($map, $($rest)*))?
+    };
+}
+
+#[macro_export]
+macro_rules! grammar {
+    ($($input: tt)+) => {
+        {
+            let mut _map = std::collections::HashMap::new();
+            $crate::grammar_item!(_map, $($input)+);
+            $crate::from_map(_map)
+        }
+    }
+}
+
 /// Creates a new grammar from a JSON grammar string
 #[cfg(feature = "tracery_json")]
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
@@ -182,8 +207,20 @@ mod tests {
     #[cfg(feature = "tracery_json")]
     use super::from_json;
     use super::from_map;
+    use super::grammar;
     use super::Result;
     use maplit::hashmap;
+
+    #[test]
+    fn test_macro() -> Result<()> {
+        let g = grammar! {
+            "origin" => "#foo#",
+            "foo" => ["a", "aa"]
+        }?;
+        let res = g.flatten(&mut rand::thread_rng())?;
+        assert_eq!(res.chars().next().unwrap(), 'a');
+        Ok(())
+    }
 
     #[test]
     fn test_flatten_map() {
