@@ -1,11 +1,25 @@
 use crate::{grammar::Grammar, Error, Execute, Result, Rule};
 use rand::{seq::SliceRandom, Rng};
-use std::collections::BTreeMap;
+
+#[derive(Debug, PartialEq, Clone)]
+pub(crate) struct Action {
+    pub(crate) label: Option<String>,
+    pub(crate) rule: Rule,
+}
+
+impl From<(Option<String>, Rule)> for Action {
+    fn from((label, rule): (Option<String>, Rule)) -> Self {
+        Action {
+            label,
+            rule,
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Tag {
     pub(crate) key: Option<String>,
-    pub(crate) actions: BTreeMap<String, Rule>,
+    pub(crate) actions: Vec<Action>,
     pub(crate) modifiers: Vec<String>,
 }
 
@@ -14,16 +28,16 @@ impl Tag {
     pub(crate) fn new<S: Into<String>>(key: S) -> Tag {
         Tag {
             key: Some(key.into()),
-            actions: BTreeMap::new(),
-            modifiers: vec![],
+            actions: Vec::new(),
+            modifiers: Vec::new(),
         }
     }
 
     pub(crate) fn empty() -> Tag {
         Tag {
             key: None,
-            actions: BTreeMap::new(),
-            modifiers: vec![],
+            actions: Vec::new(),
+            modifiers: Vec::new(),
         }
     }
 
@@ -60,8 +74,11 @@ impl Tag {
     }
 
     /// Adds the given actions to this tag
-    pub(crate) fn with_actions(mut self, actions: BTreeMap<String, Rule>) -> Tag {
-        self.actions = actions;
+    pub(crate) fn with_actions<A>(mut self, mut actions: Vec<A>) -> Tag
+    where
+        A: Into<Action>
+    {
+        self.actions = actions.drain(..).map(|a| a.into()).collect();
         self
     }
 
@@ -74,12 +91,14 @@ impl Tag {
 
 impl Execute for Tag {
     fn execute<R: ?Sized + Rng>(&self, grammar: &mut Grammar, rng: &mut R) -> Result<String> {
-        for (label, rule) in &self.actions {
-            if rule.is_pop() {
-                grammar.pop_rule(label.clone());
+        for action in &self.actions {
+            if action.rule.is_pop() && action.label.is_some() {
+                grammar.pop_rule(action.label.as_ref().unwrap().clone());
             } else {
-                let output = rule.execute(grammar, rng)?;
-                grammar.push_rule(label.clone(), output);
+                let output = action.rule.execute(grammar, rng)?;
+                if action.label.is_some() {
+                    grammar.push_rule(action.label.as_ref().unwrap().clone(), output);
+                }
             }
         }
 

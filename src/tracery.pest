@@ -10,7 +10,9 @@ modifier = ${ "." ~ tagname }
 
 text = ${ (nonhash)+ }
 
-action = ${ "[" ~ tagname ~ ":" ~ (action_rhs)+ ~ "]" }
+action = ${ "[" ~ (unlabeled_action | labeled_action) ~ "]" }
+unlabeled_action = _{ tag }
+labeled_action = _{ tagname ~ ":" ~ (action_rhs)+ }
 action_rhs = ${ (tag | action_text)+ }
 action_text = ${ (action_char)+ }
 action_char = _{ !("#" | "]") ~ ANY }
