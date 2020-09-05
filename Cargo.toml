@@ -1,6 +1,6 @@
 [package]
 name = "tracery"
-version = "0.2.0+alpha"
+version = "0.2.0-alpha"
 authors = ["Caranatar <caranatar@riseup.net>"]
 readme = "README.md"
 homepage = "https://github.com/caranatar/tracery-rs"
