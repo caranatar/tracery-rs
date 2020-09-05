@@ -2,8 +2,13 @@ use rand::{seq::SliceRandom, Rng};
 use std::collections::BTreeMap;
 use std::default::Default;
 use std::rc::Rc;
+use lazy_static::lazy_static;
 
 use crate::{parser::parse_str, Error, Execute, Result, Rule};
+
+lazy_static! {
+    static ref ORIGIN: String = String::from("origin");
+}
 
 /// Represents a single grammar
 ///
@@ -19,7 +24,7 @@ impl Default for Grammar {
     fn default() -> Grammar {
         Grammar {
             map: BTreeMap::new(),
-            default_rule: "origin".into(),
+            default_rule: ORIGIN.clone(),
             modifier_registry: crate::modifiers::get_default_modifiers(),
         }
     }
@@ -154,7 +159,7 @@ impl Grammar {
 
         Ok(Grammar {
             map,
-            default_rule: String::from("origin"),
+            default_rule: ORIGIN.clone(),
             modifier_registry: crate::modifiers::get_default_modifiers(),
         })
     }
