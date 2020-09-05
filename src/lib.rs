@@ -1,124 +1,137 @@
 #![deny(missing_docs)]
-//! Rust port of `tracery`
+//! Rust implementation of the tracery generative grammar language.
 //!
-//! This library is a port of https://github.com/galaxykate/tracery, which implements Generative
-//! grammars. Given a set of rules, written in a specific syntax, it will generate strings of text.
+//! This library is a Rust port/implementation of [`tracery`], the generative
+//! grammar language designed and created by [`Kate Compton`]. Given a set of
+//! rules written in the tracery syntax, it will use them to procedurally
+//! generate strings of text. For more information about the tracery language,
+//! see the [`Language Concepts`] section below.
 //!
-//! Example:
+//! # Usage
+//! Usage of the library can be divided into two areas: creation of grammars and
+//! the generation of output strings.
 //!
-//! ```
-//! # use maplit::hashmap;
-//! # use tracery::{from_map, Result};
-//! # use std::collections::BTreeMap;
-//! # fn main() -> Result<()> {
-//! let source = hashmap! {
-//!     "origin" => vec!["foo #bar#", "#baz# quux #qux#"],
-//!     "bar" => vec!["bar", "BAR"],
-//!     "baz" => vec!["baz", "BaZ", "bAZ"],
-//!     "qux" => vec!["qux", "QUX"]
-//! };
+//! ## Grammar Creation
+//! Grammars can be created using the [`grammar!`] macro, from an any iterable
+//! rust object of strings and associated lists of strings, or for compatibility
+//! with the original tracery, from a string representing a JSON map.
 //!
-//! let grammar = tracery::from_map(source).unwrap();
-//! // Starting from the "origin" rule, which is selected by default, fills in
-//! // random entries from the "bar", "baz", and "qux" rules, where called for
-//! // in the "origin" text:
-//! let flattened = grammar.flatten(&mut rand::thread_rng())?;
-//! let matches = flattened.eq_ignore_ascii_case("foo bar") || flattened.eq_ignore_ascii_case("baz quux qux");
-//! assert!(matches);
-//! # Ok(())
-//! # }
-//! ```
-//! or, even shorter:
+//! ### The grammar! macro
+//! Accepts input in the form `"key" => [ "list", "of", "rules" ]` or, in the
+//! case of a key having only one rule, `"key" => "rule"`. Equivalent to
+//! manually building a map and then calling [`Grammar::from_map`]
 //!
 //! ```
+//! use tracery::grammar;
 //! # use tracery::Result;
-//! # use maplit::hashmap;
-//! # use std::collections::BTreeMap;
 //! # fn main() -> Result<()> {
-//! let source = hashmap! {
-//!     "origin" => vec!["foo #bar#", "#baz# quux #qux#"],
-//!     "bar" => vec!["bar", "BAR"],
-//!     "baz" => vec!["baz", "BaZ", "bAZ"],
-//!     "qux" => vec!["qux", "QUX"]
-//! };
-//! let flattened = tracery::flatten_map(source)?;
-//! let matches = flattened.eq_ignore_ascii_case("foo bar") || flattened.eq_ignore_ascii_case("baz quux qux");
-//! assert!(matches);
+//! let g = grammar! {
+//!     "origin" => "#tool# is #description#!",
+//!     "tool" => "tracery",
+//!     "description" => [ "fun", "awesome" ]
+//! }?;
+//! # let output = g.flatten(&mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "tracery is fun!" | "tracery is awesome!" => true,
+//! #     _ => false,
+//! # });
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! So, in the example above, we might end up with `"foo bar"` or `"BaZ quux lazy dog"`, etc
-//!
-//! ## API
-//!
-//! In the example above, we used `Grammar.flatten`, but that is a convenience function that
-//! does the following:
-//!
-//! ```
-//! # use tracery::{Grammar, Result};
-//! # use maplit::hashmap;
-//! # use std::collections::BTreeMap;
-//! # fn main() -> Result<()> {
-//! let grammar = tracery::from_map(hashmap! {
-//!   "origin" => vec![ "#foo# is #bar#" ],
-//!   "foo" => vec![ "tracery" ],
-//!   "bar" => vec![ "fun" ]
-//! }).unwrap();
-//! let flattened = grammar.flatten(&mut rand::thread_rng())?;
-//! assert_eq!(flattened, "tracery is fun");
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! `.from_map` will parse the rule set out into a tree-like structure, and
-//! `.flatten` collapses that tree-like structure into a single string.
-//!
-//! ## More `tracery` syntax
-//!
-//! Tracery allows for more than just word replacement. You can attach "actions" and "modifiers" to
-//! rules as well. There are quite a few modifiers built-in to this library. Here is one:
-//!
-//! ```
-//! # use tracery::{Grammar, Result};
-//! # use maplit::hashmap;
-//! # use std::collections::BTreeMap;
-//! # fn main() -> Result<()> {
-//! let source = hashmap! {
-//!     "origin" => vec!["this word is in plural form: #noun.s#"],
-//!     "noun" => vec!["apple"]
-//! };
-//!
-//! let grammar = tracery::from_map(source)?;
-//! let flattened = grammar.flatten(&mut rand::thread_rng())?;
-//! assert_eq!("this word is in plural form: apples", flattened);
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! Actions allow you to, for example, lock in a specific value for a `#tag#`, so that you can refer to it multiple
-//! times in your story. Here is an example (modified from @galaxykate's official tutorial
-//! http://www.crystalcodepalace.com/traceryTut.html)
+//! ### From a map/iterator
+//! A grammar can be created from any object implementing, essentially,
+//! `IntoIterator<Item = (Into<String>, Into<Vec<Into<String>>)>`. For example,
+//! `HashMap<String, Vec<String>>` or `BTreeMap<&str, &[&str]>`.
 //!
 //! ```
 //! # use tracery::Result;
 //! # use maplit::hashmap;
 //! # fn main() -> Result<()> {
-//! let source = hashmap! {
-//!     "name" => vec!["Arjun","Yuuma","Darcy","Mia","Chiaki","Izzi","Azra","Lina"],
-//!     "animal" => vec!["unicorn","raven","sparrow","scorpion","coyote","eagle","owl","lizard","zebra","duck","kitten"],
-//!     "mood" => vec!["vexed","indignant","impassioned","wistful","astute","courteous"],
-//!     "story" => vec!["#hero# traveled with her pet #heroPet#.  #hero# was never #mood#, for the #heroPet# was always too #mood#."],
-//!     "origin" => vec!["#[hero:#name#][heroPet:#animal#]story#"]
+//! let map = hashmap! {
+//!     "origin" => vec![ "#tool# is #description#!" ],
+//!     "tool" => vec![ "tracery" ],
+//!     "description" => vec![ "fun", "awesome" ]
 //! };
-//! println!("{}", tracery::flatten_map(source)?);
+//! let g = tracery::from_map(map)?;
+//! # let output = g.flatten(&mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "tracery is fun!" | "tracery is awesome!" => true,
+//! #     _ => false,
+//! # });
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! We see, in the "origin" rule, the use of actions to lock-in the value of `#hero#` and
-//! `#heroPet#`, so that we can use those tags in the "story" rule, and know that the same
-//! generated value will be used in all cases.
+//! ### From a JSON string
+//! For compatibility with the original tracery, a Grammar can be created from a
+//! string representing a JSON object. This feature is controlled by the
+//! `tracery_json` feature, which is enabled by default. It can be turned off if
+//! you do not require this functionality.
+//!
+#![cfg_attr(feature = "tracery_json", doc = r#"
+```
+"#)]
+#![cfg_attr(not(feature = "tracery_json"), doc = r#"
+```ignore
+"#)]
+//! # use tracery::Result;
+//! # use maplit::hashmap;
+//! # fn main() -> Result<()> {
+//! let json = r##"{
+//!     "origin": [ "#tool# is #description#!" ],
+//!     "tool": [ "tracery" ],
+//!     "description": [ "fun", "awesome" ]
+//! }"##;
+//! let g = tracery::from_json(json)?;
+//! # let output = g.flatten(&mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "tracery is fun!" | "tracery is awesome!" => true,
+//! #     _ => false,
+//! # });
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Language Concepts
+//! A *grammar* is a map from a set of string *key*s to a stack of *rulesets*,
+//! notionally rooted at an "origin" node, associated by default with the key
+//! "origin"
+//!
+//! A *key* is any valid UTF-8 String that does not contain the reserved
+//! characters `[`, `]`, `.`, `:`, or `#`. A key is associated with a stack of
+//! rulesets, and the topmost ruleset is used when expanding the key or popping
+//! a ruleset off the stack using a pop action.
+//!
+//! A *ruleset* is a list (internally a `Vec<String>`) of strings, each
+//! representing a possible expansion of the associated key, to be chosen at
+//! random when expanding that key, containing one or more *plaintexts*, *tags*,
+//! or *action*s.
+//!
+//! An *action* is enclosed by square brackets (`[`, `]`) and can be either
+//! *labeled* or *unlabeled*.
+//!
+//! A *labeled action* takes the form `[key:rule]`, where `rule` is any valid
+//! tracery rule string, and `key` is a valid key. The rule will be executed and
+//! the result pushed onto the top of the ruleset stack associated with `key`.
+//! If `key` does not exist already, it will be created. A special exception is
+//! a pop action which takes the form `[key:POP]`, and will pop the top ruleset
+//! off the stack of rulesets associated with `key`. If the stack becomes empty,
+//! the key will be deleted from the associated grammar.
+//!
+//! An *unlabeled action* is a single *tag* encased in square brackets such as
+//! `[#setPronouns#]` and is typically used to call a function-like ruleset
+//! which will use labeled actions to set values for some set of keys (like
+//! setting a character's pronouns for a story).
+//!
+//! A *tag* is a key, encased in hashes (`#`), which will be replaced in the
+//! output by a random rule chosen from the topmost ruleset of the key's
+//! associated ruleset stack. The key in a tag can also be preceded by one or
+//! more actions, which will be executed before the tag is expanded. Some
+//! examples of valid tags include: `#foo#`, `#[foo:#bar#]baz#`, and
+//! `#[#setPronouns#][#setJob#][#setPet#]hero#`.
+//!
+//! A *plaintext* is any text in a rule which is not a tag or action.
 
 mod error;
 pub use crate::error::Error;
