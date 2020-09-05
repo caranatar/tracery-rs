@@ -50,10 +50,7 @@ impl Tag {
             Some(key) => {
                 let rule = match grammar.get_rule(key) {
                     Some(rules) => Ok(rules.choose(rng).unwrap().clone()),
-                    None => Err(Error::MissingKeyError(format!(
-                        "Could not find key {}",
-                        key
-                    ))),
+                    None => Err(Error::MissingKeyError(key.clone())),
                 }?;
                 rule.execute(grammar, rng)
             }

@@ -124,10 +124,7 @@ impl Grammar {
     {
         let rule = match self.map.get(key) {
             Some(rules) => Ok(rules.last().unwrap().choose(rng).unwrap().clone()),
-            None => Err(Error::MissingKeyError(format!(
-                "Grammar does not contain key {}",
-                self.default_rule
-            ))),
+            None => Err(Error::MissingKeyError(self.default_rule.clone())),
         }?;
         rule.execute(self, rng)
     }
