@@ -232,7 +232,7 @@ where
 /// random output string
 #[cfg(feature = "tracery_json")]
 pub fn flatten_json<S: AsRef<str>>(s: S) -> Result<String> {
-    from_json(s)?.flatten(&mut rand::thread_rng())
+    from_json(s)?.execute(&crate::grammar::ORIGIN, &mut rand::thread_rng())
 }
 
 /// Creates a new grammar from an input map, then uses it to create a random
@@ -244,7 +244,7 @@ where
     C: IntoIterator<Item = S>,
     S: Into<String>,
 {
-    from_map(iter)?.flatten(&mut rand::thread_rng())
+    from_map(iter)?.execute(&crate::grammar::ORIGIN, &mut rand::thread_rng())
 }
 
 /// A convenience type for a `Result` of `T` or [`Error`]

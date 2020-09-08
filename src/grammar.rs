@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 use crate::{parser::parse_str, Error, Execute, Result, Rule};
 
 lazy_static! {
-    static ref ORIGIN: String = String::from("origin");
+    pub(crate) static ref ORIGIN: String = String::from("origin");
 }
 
 /// Represents a single grammar
