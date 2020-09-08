@@ -1,11 +1,11 @@
 #![deny(missing_docs)]
 //! Rust implementation of the tracery generative grammar language.
 //!
-//! This library is a Rust port/implementation of [`tracery`], the generative
-//! grammar language designed and created by [`Kate Compton`]. Given a set of
+//! This library is a Rust port/implementation of [tracery], the generative
+//! grammar language designed and created by [Kate Compton]. Given a set of
 //! rules written in the tracery syntax, it will use them to procedurally
 //! generate strings of text. For more information about the tracery language,
-//! see the [`Language Concepts`] section below.
+//! see the [Language Concepts] section below.
 //!
 //! # Usage
 //! Usage of the library can be divided into two areas: creation of grammars and
@@ -93,6 +93,99 @@
 //! # }
 //! ```
 //!
+//! ## Generating output strings
+//! There are two methods for getting a generated output string from a created
+//! Grammar: [`execute`] and [`flatten`]. Generally, [`execute`] should be
+//! preferred if possible.
+//!
+//! ### execute
+//! [`execute`] takes two parameters: the rule to expand and an RNG to use
+//! during generation. The RNG can be any type implementing [`rand::Rng`].
+//!
+//! ```
+//! use tracery::grammar;
+//! # use tracery::Result;
+//! # fn main() -> Result<()> {
+//! let mut g = grammar! {
+//!     "origin" => "#tool# is #description#!",
+//!     "tool" => "tracery",
+//!     "description" => [ "fun", "awesome" ]
+//! }?;
+//!
+//! // Generate an output (either "tracery is fun!" or "tracery is awesome!")
+//! let key = String::from("origin");
+//! let output = g.execute(&key, &mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "tracery is fun!" | "tracery is awesome!" => true,
+//! #     _ => false,
+//! # });
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! [`execute`] generates its output using the Grammar in-place. Since Grammars
+//! are allowed to modify their own rule stacks, [`execute`] must take a `&mut
+//! self` reference. This means that any modifications made during an execution
+//! will persist in the Grammar.
+//!
+//! ```
+//! use tracery::grammar;
+//! # use tracery::Result;
+//! # fn main() -> Result<()> {
+//! // This time, origin has a side-effect: it creates the rule 'aside'
+//! let mut g = grammar! {
+//!     "origin" => "#[aside:Rust is, too]tool# is #description#!",
+//!     "tool" => "tracery",
+//!     "description" => [ "fun", "awesome" ]
+//! }?;
+//!
+//! // Generate an output (either "tracery is fun!" or "tracery is awesome!")
+//! let key = String::from("origin");
+//! let output = g.execute(&key, &mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "tracery is fun!" | "tracery is awesome!" => true,
+//! #     _ => false,
+//! # });
+//!
+//! // The previous call to execute created the 'aside' rule
+//! let key = String::from("aside");
+//! // Generates the string "Rust is, too"
+//! let output = g.execute(&key, &mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "Rust is, too" => true,
+//! #     _ => false,
+//! # });
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### flatten
+//! [`flatten`], unlike [`execute`], always operates on the default rule of the
+//! Grammar ("origin" by default), but like [`execute`], takes an instance of
+//! [`rand::Rng`] to use during generation. In addition, [`flatten`] creates a
+//! clone of the Grammar to use during generation, then discards it, which means
+//! that any side-effects that occur will be discarded when it's done.
+//!
+//! ```
+//! use tracery::grammar;
+//! # use tracery::Result;
+//! # fn main() -> Result<()> {
+//! let g = grammar! {
+//!     "origin" => "#tool# is #description#!",
+//!     "tool" => "tracery",
+//!     "description" => [ "fun", "awesome" ]
+//! }?;
+//!
+//! // Generate an output (either "tracery is fun!" or "tracery is awesome!")
+//! let output = g.flatten(&mut rand::thread_rng())?;
+//! # assert!(match output.as_str() {
+//! #     "tracery is fun!" | "tracery is awesome!" => true,
+//! #     _ => false,
+//! # });
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! # Language Concepts
 //! A *grammar* is a map from a set of string *key*s to a stack of *rulesets*,
 //! notionally rooted at an "origin" node, associated by default with the key
@@ -132,6 +225,15 @@
 //! `#[#setPronouns#][#setJob#][#setPet#]hero#`.
 //!
 //! A *plaintext* is any text in a rule which is not a tag or action.
+//!
+//! [tracery]: https://tracery.io/
+//! [Kate Compton]: http://www.galaxykate.com/
+//! [Language Concepts]: index.html#language-concepts
+//! [`grammar!`]: macro.grammar.html
+//! [`Grammar::from_map`]: struct.Grammar.html#method.from_map
+//! [`execute`]: struct.Grammar.html#method.execute
+//! [`flatten`]: struct.Grammar.html#method.flatten
+//! [`rand::Rng`]: http://docs.rs/rand/latest/rand/trait.Rng.html
 
 mod error;
 pub use crate::error::Error;
@@ -210,6 +312,32 @@ macro_rules! grammar {
 }
 
 /// Creates a new grammar from a JSON grammar string
+///
+/// # Returns
+/// Result<[`Grammar`], [`Error`]>
+///
+/// # Examples
+/// ```
+/// # use tracery::Result;
+/// # use maplit::hashmap;
+/// # fn main() -> Result<()> {
+/// let json = r##"{
+///     "origin": [ "#tool# is #description#!" ],
+///     "tool": [ "tracery" ],
+///     "description": [ "fun", "awesome" ]
+/// }"##;
+/// let g = tracery::from_json(json)?;
+/// # let output = g.flatten(&mut rand::thread_rng())?;
+/// # assert!(match output.as_str() {
+/// #     "tracery is fun!" | "tracery is awesome!" => true,
+/// #     _ => false,
+/// # });
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Error`]: enum.Error.html
+/// [`Grammar`]: struct.Grammar.html
 #[cfg(feature = "tracery_json")]
 pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
     use std::collections::HashMap;
@@ -218,6 +346,32 @@ pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
 }
 
 /// Creates a new grammar from an input map
+///
+/// # Returns
+/// Result<[`Grammar`], [`Error`]>
+///
+/// # Examples
+/// ```
+/// # use tracery::Result;
+/// # use maplit::hashmap;
+/// # fn main() -> Result<()> {
+/// let map = hashmap! {
+///     "origin" => vec![ "#tool# is #description#!" ],
+///     "tool" => vec![ "tracery" ],
+///     "description" => vec![ "fun", "awesome" ]
+/// };
+/// let g = tracery::from_map(map)?;
+/// # let output = g.flatten(&mut rand::thread_rng())?;
+/// # assert!(match output.as_str() {
+/// #     "tracery is fun!" | "tracery is awesome!" => true,
+/// #     _ => false,
+/// # });
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Error`]: enum.Error.html
+/// [`Grammar`]: struct.Grammar.html
 pub fn from_map<I, K, C, S>(iter: I) -> Result<Grammar>
 where
     I: IntoIterator<Item = (K, C)>,
@@ -229,14 +383,68 @@ where
 }
 
 /// Creates a new grammar from a JSON grammar string, then uses it to create a
-/// random output string
+/// random output string, using the "origin" rule
+///
+/// # Returns
+/// Result<[`String`], [`Error`]>
+///
+/// # Examples
+/// ```
+/// # use tracery::Result;
+/// # use maplit::hashmap;
+/// # fn main() -> Result<()> {
+/// let json = r##"{
+///     "origin": [ "#tool# is #description#!" ],
+///     "tool": [ "tracery" ],
+///     "description": [ "fun", "awesome" ]
+/// }"##;
+///
+/// // Generate an output (either "tracery is fun!" or "tracery is awesome!")
+/// let output = tracery::flatten_json(json)?;
+/// # assert!(match output.as_str() {
+/// #     "tracery is fun!" | "tracery is awesome!" => true,
+/// #     _ => false,
+/// # });
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Error`]: enum.Error.html
+/// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
 #[cfg(feature = "tracery_json")]
 pub fn flatten_json<S: AsRef<str>>(s: S) -> Result<String> {
     from_json(s)?.execute(&crate::grammar::ORIGIN, &mut rand::thread_rng())
 }
 
 /// Creates a new grammar from an input map, then uses it to create a random
-/// output string
+/// output string, using the "origin" rule
+///
+/// # Returns
+/// Result<[`String`], [`Error`]>
+///
+/// # Examples
+/// ```
+/// # use tracery::Result;
+/// # use maplit::hashmap;
+/// # fn main() -> Result<()> {
+/// let map = hashmap! {
+///     "origin" => vec![ "#tool# is #description#!" ],
+///     "tool" => vec![ "tracery" ],
+///     "description" => vec![ "fun", "awesome" ]
+/// };
+///
+/// // Generate an output (either "tracery is fun!" or "tracery is awesome!")
+/// let output = tracery::flatten_map(map)?;
+/// # assert!(match output.as_str() {
+/// #     "tracery is fun!" | "tracery is awesome!" => true,
+/// #     _ => false,
+/// # });
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Error`]: enum.Error.html
+/// [`String`]: https://doc.rust-lang.org/std/string/struct.String.html
 pub fn flatten_map<I, K, C, S>(iter: I) -> Result<String>
 where
     I: IntoIterator<Item = (K, C)>,

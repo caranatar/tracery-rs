@@ -9,9 +9,11 @@ lazy_static! {
     pub(crate) static ref ORIGIN: String = String::from("origin");
 }
 
-/// Represents a single grammar
+/// Represents a single, complete tracery grammar.
 ///
-/// This is the main data type used with this library.
+/// See the [`crate-level documentation`] for a usage overview.
+///
+/// [`crate-level documentation`]: index.html
 #[derive(Clone)]
 pub struct Grammar {
     map: BTreeMap<String, Vec<Vec<Rule>>>,
@@ -20,7 +22,6 @@ pub struct Grammar {
 }
 
 impl Grammar {
-    /// Gets a single modifier with the given name, if it exists
     pub(crate) fn get_modifier(&self, modifier: &str) -> Option<&dyn Fn(&str) -> String> {
         self.modifier_registry.get(modifier).map(|x| x.as_ref())
     }
