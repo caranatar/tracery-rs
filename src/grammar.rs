@@ -21,7 +21,7 @@ pub struct Grammar {
 
 impl Grammar {
     /// Gets a single modifier with the given name, if it exists
-    pub fn get_modifier(&self, modifier: &str) -> Option<&dyn Fn(&str) -> String> {
+    pub(crate) fn get_modifier(&self, modifier: &str) -> Option<&dyn Fn(&str) -> String> {
         self.modifier_registry.get(modifier).map(|x| x.as_ref())
     }
 
