@@ -62,6 +62,30 @@ impl Grammar {
     }
 
     /// Creates a new grammar from a JSON grammar string
+    ///
+    /// # Examples
+    /// ```
+    /// use tracery::Grammar;
+    /// # use tracery::Result;
+    /// # use maplit::hashmap;
+    /// # fn main() -> Result<()> {
+    /// let json = r##"{
+    ///     "origin": [ "#tool# is #description#!" ],
+    ///     "tool": [ "tracery" ],
+    ///     "description": [ "fun", "awesome" ]
+    /// }"##;
+    /// let g = Grammar::from_json(json)?;
+    /// # let output = g.flatten(&mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`Error`]: enum.Error.html
+    /// [`Grammar`]: struct.Grammar.html
     #[cfg(feature = "tracery_json")]
     pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
         let source: BTreeMap<String, Vec<String>> = serde_json::from_str(s.as_ref())?;
@@ -137,6 +161,27 @@ impl Grammar {
     ///
     /// If you wish to preserve changes use [`execute`]
     ///
+    /// # Examples
+    /// ```
+    /// use tracery::grammar;
+    /// # use tracery::Result;
+    /// # fn main() -> Result<()> {
+    /// let g = grammar! {
+    ///     "origin" => "#tool# is #description#!",
+    ///     "tool" => "tracery",
+    ///     "description" => [ "fun", "awesome" ]
+    /// }?;
+    ///
+    /// // Generate output (either "tracery is fun!" or "tracery is awesome!")
+    /// let output = g.flatten(&mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// [`execute`]: struct.Grammar.html#method.execute
     pub fn flatten<R: ?Sized + Rng>(&self, rng: &mut R) -> Result<String> {
         self.clone().execute(&self.default_rule, rng)
@@ -150,8 +195,61 @@ impl Grammar {
     /// such as `[foo:bar]` is executed, then the Grammar will maintain that
     /// rule after this method returns.
     ///
-    /// If you wish to produce an output String without preserving changes, used
+    /// If you wish to produce an output String without preserving changes, use
     /// [`flatten`].
+    /// ```
+    /// use tracery::grammar;
+    /// # use tracery::Result;
+    /// # fn main() -> Result<()> {
+    /// let mut g = grammar! {
+    ///     "origin" => "#tool# is #description#!",
+    ///     "tool" => "tracery",
+    ///     "description" => [ "fun", "awesome" ]
+    /// }?;
+    ///
+    /// // Generate output (either "tracery is fun!" or "tracery is awesome!")
+    /// let key = String::from("origin");
+    /// let output = g.execute(&key, &mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Using a key created during a previous execution:
+    ///
+    /// ```
+    /// use tracery::grammar;
+    /// # use tracery::Result;
+    /// # fn main() -> Result<()> {
+    /// // This time, origin has a side-effect: it creates the rule 'aside'
+    /// let mut g = grammar! {
+    ///     "origin" => "#[aside:Rust is, too]tool# is #description#!",
+    ///     "tool" => "tracery",
+    ///     "description" => [ "fun", "awesome" ]
+    /// }?;
+    ///
+    /// // Generate output (either "tracery is fun!" or "tracery is awesome!")
+    /// let key = String::from("origin");
+    /// let output = g.execute(&key, &mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    ///
+    /// // The previous call to execute created the 'aside' rule
+    /// let key = String::from("aside");
+    /// // Generates the string "Rust is, too"
+    /// let output = g.execute(&key, &mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "Rust is, too" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// [`flatten`]: struct.Grammar.html#method.flatten
     pub fn execute<R>(&mut self, key: &String, rng: &mut R) -> Result<String>
@@ -167,10 +265,45 @@ impl Grammar {
 
     /// Creates a new Grammar from an input map of keys to rule lists
     ///
-    /// # Notes
+    /// # Examples
+    /// ```
+    /// # use tracery::Result;
+    /// # use maplit::hashmap;
+    /// # fn main() -> Result<()> {
+    /// let map = hashmap! {
+    ///     "origin" => vec![ "#tool# is #description#!" ],
+    ///     "tool" => vec![ "tracery" ],
+    ///     "description" => vec![ "fun", "awesome" ]
+    /// };
+    /// let g = tracery::from_map(map)?;
+    /// # let output = g.flatten(&mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// Any object implementing
     /// `IntoIterator<Item = (Into<String>, Into<Vec<Into<String>>>)>` will be
-    /// accepted by this function, despite its name
+    /// accepted by this function, despite its name:
+    ///
+    /// ```
+    /// # use tracery::Result;
+    /// # fn main() -> Result<()> {
+    /// let map = vec![ ("origin", vec![ "#tool# is #description#!" ]),
+    ///                 ("tool", vec![ "tracery" ]),
+    ///                 ("description", vec![ "fun", "awesome" ]) ];
+    /// let g = tracery::from_map(map)?;
+    /// # let output = g.flatten(&mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_map<I, K, C, S>(iter: I) -> Result<Self>
     where
         I: IntoIterator<Item = (K, C)>,

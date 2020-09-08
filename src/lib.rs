@@ -319,9 +319,6 @@ macro_rules! grammar {
 
 /// Creates a new grammar from a JSON grammar string
 ///
-/// # Returns
-/// Result<[`Grammar`], [`Error`]>
-///
 /// # Examples
 /// ```
 /// # use tracery::Result;
@@ -352,9 +349,6 @@ pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
 }
 
 /// Creates a new grammar from an input map
-///
-/// # Returns
-/// Result<[`Grammar`], [`Error`]>
 ///
 /// # Examples
 /// ```
@@ -391,9 +385,6 @@ where
 /// Creates a new grammar from a JSON grammar string, then uses it to create a
 /// random output string, using the "origin" rule
 ///
-/// # Returns
-/// Result<[`String`], [`Error`]>
-///
 /// # Examples
 /// ```
 /// # use tracery::Result;
@@ -424,9 +415,6 @@ pub fn flatten_json<S: AsRef<str>>(s: S) -> Result<String> {
 
 /// Creates a new grammar from an input map, then uses it to create a random
 /// output string, using the "origin" rule
-///
-/// # Returns
-/// Result<[`String`], [`Error`]>
 ///
 /// # Examples
 /// ```
