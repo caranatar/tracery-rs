@@ -7,9 +7,5 @@ use rand::Rng;
 pub trait Execute {
     /// Given a grammar and a set of overriden rules (from actions), produces a
     /// single "flattened" output string or an error
-    fn execute<R: ?Sized + Rng>(
-        &self,
-        grammar: &mut Grammar,
-        rng: &mut R
-    ) -> Result<String>;
+    fn execute<R: ?Sized + Rng>(&self, grammar: &mut Grammar, rng: &mut R) -> Result<String>;
 }

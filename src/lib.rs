@@ -69,12 +69,18 @@
 //! `tracery_json` feature, which is enabled by default. It can be turned off if
 //! you do not require this functionality.
 //!
-#![cfg_attr(feature = "tracery_json", doc = r#"
+#![cfg_attr(
+    feature = "tracery_json",
+    doc = r#"
 ```
-"#)]
-#![cfg_attr(not(feature = "tracery_json"), doc = r#"
+"#
+)]
+#![cfg_attr(
+    not(feature = "tracery_json"),
+    doc = r#"
 ```ignore
-"#)]
+"#
+)]
 //! # use tracery::Result;
 //! # use maplit::hashmap;
 //! # fn main() -> Result<()> {

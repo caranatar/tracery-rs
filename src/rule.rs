@@ -18,17 +18,12 @@ impl Rule {
     }
 
     pub(crate) fn is_pop(&self) -> bool {
-        self.0.len() == 1 &&
-            self.0.first().unwrap().text() == Some(&POP)
+        self.0.len() == 1 && self.0.first().unwrap().text() == Some(&POP)
     }
 }
 
 impl Execute for Rule {
-    fn execute<R: ?Sized + rand::Rng>(
-        &self,
-        grammar: &mut Grammar,
-        rng: &mut R
-    ) -> Result<String> {
+    fn execute<R: ?Sized + rand::Rng>(&self, grammar: &mut Grammar, rng: &mut R) -> Result<String> {
         let parts = self
             .0
             .iter()

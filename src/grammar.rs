@@ -1,7 +1,7 @@
+use lazy_static::lazy_static;
 use rand::{seq::SliceRandom, Rng};
 use std::collections::BTreeMap;
 use std::rc::Rc;
-use lazy_static::lazy_static;
 
 use crate::{parser::parse_str, Error, Execute, Result, Rule};
 
@@ -65,7 +65,7 @@ impl Grammar {
     #[cfg(feature = "tracery_json")]
     pub fn from_json<S: AsRef<str>>(s: S) -> Result<Grammar> {
         let source: BTreeMap<String, Vec<String>> = serde_json::from_str(s.as_ref())?;
-        let mut map:BTreeMap<String, Vec<Vec<Rule>>> = BTreeMap::new();
+        let mut map: BTreeMap<String, Vec<Vec<Rule>>> = BTreeMap::new();
         for (key, value) in source.into_iter() {
             let rules: Vec<Rule> = value.iter().map(parse_str).collect::<Result<Vec<_>>>()?;
             map.insert(key, vec![rules]);
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn execute() -> Result<()> {
-        let input = hashmap!{
+        let input = hashmap! {
             "origin" => vec!["#[foo:bar]baz#"],
             "baz" => vec!["baz"]
         };
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn execute_function() -> Result<()> {
-        let input = hashmap!{
+        let input = hashmap! {
             "origin" => vec!["#setFoo##baz#"],
             "setFoo" => vec!["[foo:bar][bar:#[qux:quux]baz#]"],
             "baz" => vec!["baz"]
@@ -251,7 +251,10 @@ mod tests {
             "foo" => vec!["bar"]
         };
         let mut grammar = Grammar::from_map(input)?;
-        assert_eq!("bazbar", grammar.execute(&String::from("origin"), &mut rand::thread_rng())?);
+        assert_eq!(
+            "bazbar",
+            grammar.execute(&String::from("origin"), &mut rand::thread_rng())?
+        );
         Ok(())
     }
 
@@ -267,7 +270,10 @@ mod tests {
         let origin = String::from("origin");
         assert_eq!("bar", grammar.execute(&origin, &mut rng)?);
         let origin = String::from("foo");
-        assert!(matches!(grammar.execute(&origin, &mut rng), Err(Error::MissingKeyError(_))));
+        assert!(matches!(
+            grammar.execute(&origin, &mut rng),
+            Err(Error::MissingKeyError(_))
+        ));
         Ok(())
     }
 }

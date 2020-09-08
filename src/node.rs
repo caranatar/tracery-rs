@@ -33,11 +33,7 @@ impl From<String> for Node {
 }
 
 impl Execute for Node {
-    fn execute<R: ?Sized + rand::Rng>(
-        &self,
-        grammar: &mut Grammar,
-        rng: &mut R
-    ) -> Result<String> {
+    fn execute<R: ?Sized + rand::Rng>(&self, grammar: &mut Grammar, rng: &mut R) -> Result<String> {
         match self {
             Node::Tag(ref tag) => tag.execute(grammar, rng),
             Node::Text(ref s) => Ok(s.to_owned()),
@@ -49,15 +45,15 @@ impl Execute for Node {
 mod tests {
     use super::*;
     use crate::parser::parse_tag;
-    
+
     #[test]
     fn conversion() -> Result<()> {
         let tag = parse_tag("#a#")?;
         assert_eq!(Node::Tag(tag.clone()), Node::from(tag));
-        
+
         let text = "abc".to_string();
         assert_eq!(Node::Text(text.clone()), Node::from(text));
-        
+
         Ok(())
     }
 }

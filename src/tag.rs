@@ -9,10 +9,7 @@ pub(crate) struct Action {
 
 impl From<(Option<String>, Rule)> for Action {
     fn from((label, rule): (Option<String>, Rule)) -> Self {
-        Action {
-            label,
-            rule,
-        }
+        Action { label, rule }
     }
 }
 
@@ -73,7 +70,7 @@ impl Tag {
     /// Adds the given actions to this tag
     pub(crate) fn with_actions<A>(mut self, mut actions: Vec<A>) -> Tag
     where
-        A: Into<Action>
+        A: Into<Action>,
     {
         self.actions = actions.drain(..).map(|a| a.into()).collect();
         self

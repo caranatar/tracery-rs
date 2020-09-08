@@ -40,8 +40,8 @@ fn parse_actions(a: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
             Rule::action => {
                 let (label, rule) = parse_action(p)?;
                 acc.push((label, rule));
-            },
-            _ => unreachable!()
+            }
+            _ => unreachable!(),
         }
         Ok(acc)
     })?;
