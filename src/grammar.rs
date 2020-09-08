@@ -78,13 +78,54 @@ impl Grammar {
         })
     }
 
-    /// Sets a default rule for the `Grammar`
+    /// Sets a default rule, then returns the modified Grammar
     ///
-    /// # Returns
-    /// The modified `Grammar`
-    pub fn default_rule<S: Into<String>>(mut self, s: S) -> Grammar {
-        self.default_rule = s.into();
+    /// # Examples
+    /// ```
+    /// use tracery::grammar;
+    /// # use tracery::Result;
+    /// # fn main() -> Result<()> {
+    /// let g = grammar! {
+    ///     "start" => "#tool# is #description#!",
+    ///     "tool" => "tracery",
+    ///     "description" => [ "fun", "awesome" ]
+    /// }?.with_default_rule("start");
+    /// # let output = g.flatten(&mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_default_rule<S: Into<String>>(mut self, s: S) -> Grammar {
+        self.set_default_rule(s);
         self
+    }
+
+    /// Sets a default rule
+    ///
+    /// # Examples
+    /// ```
+    /// use tracery::grammar;
+    /// # use tracery::Result;
+    /// # fn main() -> Result<()> {
+    /// let mut g = grammar! {
+    ///     "start" => "#tool# is #description#!",
+    ///     "tool" => "tracery",
+    ///     "description" => [ "fun", "awesome" ]
+    /// }?;
+    /// g.set_default_rule("start");
+    /// # let output = g.flatten(&mut rand::thread_rng())?;
+    /// # assert!(match output.as_str() {
+    /// #     "tracery is fun!" | "tracery is awesome!" => true,
+    /// #     _ => false,
+    /// # });
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn set_default_rule<S: Into<String>>(&mut self, s: S) {
+        self.default_rule = s.into();
     }
 
     /// Attempts to use the Grammar to produce an output String.
@@ -173,11 +214,24 @@ mod tests {
     }
 
     #[test]
+    fn with_default_rule() -> Result<()> {
+        let input = hashmap! {
+            "a" => vec![ "a", "aa", "aaa" ]
+        };
+        let g = Grammar::from_map(input)?.with_default_rule("a");
+        let res = g.flatten(&mut rand::thread_rng())?;
+        assert_eq!(res.chars().next().unwrap(), 'a');
+
+        Ok(())
+    }
+
+    #[test]
     fn set_default_rule() -> Result<()> {
         let input = hashmap! {
             "a" => vec![ "a", "aa", "aaa" ]
         };
-        let g = Grammar::from_map(input)?.default_rule("a");
+        let mut g = Grammar::from_map(input)?;
+        g.set_default_rule("a");
         let res = g.flatten(&mut rand::thread_rng())?;
         assert_eq!(res.chars().next().unwrap(), 'a');
 
