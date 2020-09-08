@@ -118,3 +118,107 @@ pub(crate) fn get_default_modifiers() -> BTreeMap<String, Rc<dyn Fn(&str) -> Str
     );
     modifiers
 }
+
+mod tests {
+    #[test]
+    fn capitalize() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["capitalize"];
+        assert_eq!(c(""), "");
+        assert_eq!(c("a"), "A");
+        assert_eq!(c("abc"), "Abc");
+        assert_eq!(c("a b"), "A b");
+        assert_eq!(c("aBC"), "ABC");
+        assert_eq!(c("ABC"), "ABC");
+
+        // Test expansion into multiple characters
+        assert_eq!(c("ß"), "SS");
+        assert_eq!(c("ßBC"), "SSBC");
+        assert_eq!(c("ßbc"), "SSbc");
+        assert_eq!(c("ß bc"), "SS bc");
+    }
+
+    #[test]
+    fn capitalize_all() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["capitalizeAll"];
+        assert_eq!(c(""), "");
+        assert_eq!(c("a"), "A");
+        assert_eq!(c("a b"), "A B");
+        assert_eq!(c("ABC"), "ABC");
+        assert_eq!(c("abc\nDEF"), "Abc\nDEF");
+        assert_eq!(c("ß bc"), "SS Bc");
+        assert_eq!(c("bc\t\nßßß"), "Bc\t\nSSßß");
+        assert_eq!(c("\ta\nb"), "\tA\nB");
+    }
+
+    #[test]
+    fn in_quotes() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["inQuotes"];
+        assert_eq!(c(""), r#""""#);
+        assert_eq!(c("hail eris"), r#""hail eris""#);
+    }
+
+    #[test]
+    fn comma() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["comma"];
+
+        assert_eq!(c("a,"), "a,");
+        assert_eq!(c("a."), "a.");
+        assert_eq!(c("a!"), "a!");
+        assert_eq!(c("a?"), "a?");
+
+        assert_eq!(c("a"), "a,");
+        assert_eq!(c(""), ",");
+    }
+
+    #[test]
+    fn s() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["s"];
+
+        assert_eq!(c(""), "s");
+        assert_eq!(c("harpy"), "harpies");
+        assert_eq!(c("box"), "boxes");
+        assert_eq!(c("index"), "indices");
+        assert_eq!(c("goose"), "geese");
+        assert_eq!(c("ox"), "oxen");
+        assert_eq!(c("cat"), "cats");
+    }
+
+    #[test]
+    fn a() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["a"];
+
+        assert_eq!(c(""), "a ");
+        assert_eq!(c("cat"), "a cat");
+        assert_eq!(c("a"), "an a");
+        assert_eq!(c("e"), "an e");
+        assert_eq!(c("i"), "an i");
+        assert_eq!(c("o"), "an o");
+        assert_eq!(c("u"), "an u");
+        assert_eq!(c("xylophone"), "a xylophone");
+    }
+
+    #[test]
+    fn ed() {
+        let mods = super::get_default_modifiers();
+        let c = &mods["ed"];
+
+        assert_eq!(c(""), "");
+        assert_eq!(c("box"), "boxed");
+        assert_eq!(c("hail eris"), "hailed eris");
+        assert_eq!(c("hail\t\neris"), "hailed\t\neris");
+        assert_eq!(c("\t\nhail eris"), "\t\nhailed eris");
+
+        assert_eq!(c("storey"), "storeyed");
+        assert_eq!(c("story"), "storied");
+
+        assert_eq!(c("blame"), "blamed");
+
+        assert_eq!(c("\t"), "\t");
+    }
+}
