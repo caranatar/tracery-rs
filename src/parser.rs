@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use pest::Parser;
 use pest_derive::Parser;
 
@@ -23,6 +21,7 @@ fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
         match p.as_rule() {
             Rule::text => acc.push(Node::Text(p.as_str().to_string())),
             Rule::tag => acc.push(Node::Tag(parse_tag_pair(p)?)),
+            Rule::actions => acc.push(Node::Tag(parse_actions(p)?)),
             _ => unreachable!(),
         }
         Ok(acc)
@@ -31,38 +30,52 @@ fn parse_rule<S: AsRef<str>>(s: S) -> Result<TRule, PestError> {
     Ok(TRule::new(nodes))
 }
 
-pub fn parse_str<S: AsRef<str>>(s: S) -> Result<TRule, Error> {
+pub(crate) fn parse_str<S: AsRef<str>>(s: S) -> Result<TRule, Error> {
     parse_rule(s).map_err(|e| Error::ParseError(format!("{}", e)))
 }
 
-fn parse_action(a: pest::iterators::Pair<Rule>) -> Result<(String, TRule), PestError> {
-    let mut tagname = "";
+fn parse_actions(a: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
+    let actions = a.into_inner().try_fold(Vec::new(), |mut acc, p| {
+        match p.as_rule() {
+            Rule::action => {
+                let (label, rule) = parse_action(p)?;
+                acc.push((label, rule));
+            }
+            _ => unreachable!(),
+        }
+        Ok(acc)
+    })?;
+    Ok(Tag::empty().with_actions(actions))
+}
+
+fn parse_action(a: pest::iterators::Pair<Rule>) -> Result<(Option<String>, TRule), PestError> {
+    let mut tagname = None;
     let mut rule = None;
     for part in a.into_inner() {
         match part.as_rule() {
             Rule::tagname => {
-                tagname = part.as_str();
+                tagname = Some(part.as_str().to_string());
             }
-            Rule::action_rhs => {
+            // action_rhs for labeled actions; tag for unlabeled actions
+            Rule::action_rhs | Rule::tag => {
                 rule = Some(parse_rule(part.as_str())?);
             }
             _ => unreachable!(),
         }
-        println!("part of action => {:?}", part);
     }
 
-    Ok((tagname.to_string(), rule.unwrap()))
+    Ok((tagname, rule.unwrap()))
 }
 
 fn parse_tag_pair(s: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
-    let mut actions = BTreeMap::new();
+    let mut actions = Vec::new();
     let mut tagname = "";
     let mut modifiers = Vec::new();
     for part in s.into_inner() {
         match part.as_rule() {
             Rule::action => {
                 let (key, action) = parse_action(part)?;
-                actions.insert(key, action);
+                actions.push((key, action));
             }
             Rule::tagname => {
                 tagname = part.as_str();
@@ -80,14 +93,13 @@ fn parse_tag_pair(s: pest::iterators::Pair<Rule>) -> Result<Tag, PestError> {
         .with_modifiers(modifiers))
 }
 
-fn parse_tag_str<S: AsRef<str>>(s: S) -> Result<Tag, PestError> {
-    let parsed_tag = TraceryParser::parse(Rule::tag, s.as_ref())?.next().unwrap();
-
-    parse_tag_pair(parsed_tag)
-}
-
-pub fn parse_tag<S: AsRef<str>>(s: S) -> Result<Tag, Error> {
-    parse_tag_str(s).map_err(|e| Error::ParseError(format!("{}", e)))
+#[cfg(test)]
+pub(crate) fn parse_tag<S: AsRef<str>>(s: S) -> Result<Tag, Error> {
+    let tag_pair = TraceryParser::parse(Rule::tag, s.as_ref())
+        .map_err(|e| Error::ParseError(format!("{}", e)))?
+        .next()
+        .unwrap();
+    parse_tag_pair(tag_pair).map_err(|e| Error::ParseError(format!("{}", e)))
 }
 
 #[cfg(test)]
@@ -97,7 +109,7 @@ mod tests {
     #[test]
     fn parse_tagname() -> Result<(), Error> {
         let tag = parse_tag("#one#")?;
-        assert_eq!(tag.key, "one");
+        assert_eq!(tag.key.unwrap(), "one");
         Ok(())
     }
 
@@ -111,36 +123,30 @@ mod tests {
 
     #[test]
     fn parse_tag_with_tag_action() -> Result<(), Error> {
-        let mut tag = parse_tag("#[one:#two#]tagname#")?;
-        assert_eq!(tag.key, "tagname");
+        let tag = parse_tag("#[one:#two#]tagname#")?;
+        assert_eq!(tag.key.unwrap(), "tagname");
         assert_eq!(tag.actions.len(), 1);
-        let action = tag.actions.entry("one".to_string());
-        if let std::collections::btree_map::Entry::Occupied(e) = action {
-            assert_eq!(e.get().0, vec![Node::Tag(Tag::new("two"))]);
-        } else {
-            panic!("Expected an entry but none found");
-        }
+        let action = &tag.actions[0];
+        assert_eq!(action.label, Some(String::from("one")));
+        assert_eq!((action.rule).0, vec![Node::Tag(Tag::new("two"))]);
         Ok(())
     }
 
     #[test]
     fn parse_tag_with_text_action() -> Result<(), Error> {
-        let mut tag = parse_tag("#[one:a:b.c d]tagname#")?;
-        assert_eq!(tag.key, "tagname");
+        let tag = parse_tag("#[one:a:b.c d]tagname#")?;
+        assert_eq!(tag.key.unwrap(), "tagname");
         assert_eq!(tag.actions.len(), 1);
-        let action = tag.actions.entry("one".to_string());
-        if let std::collections::btree_map::Entry::Occupied(e) = action {
-            assert_eq!(e.get().0, vec![Node::Text("a:b.c d".to_string())]);
-        } else {
-            panic!("Expected an entry but none found");
-        }
+        let action = &tag.actions[0];
+        assert_eq!(action.label, Some(String::from("one")));
+        assert_eq!((action.rule).0, vec![Node::Text("a:b.c d".to_string())]);
         Ok(())
     }
 
     #[test]
     fn parse_tag_with_modifiers() -> Result<(), Error> {
         let tag = parse_tag("#one.two.three#")?;
-        assert_eq!(tag.key, "one");
+        assert_eq!(tag.key.unwrap(), "one");
         assert_eq!(tag.modifiers, vec!["two", "three"]);
         Ok(())
     }
@@ -148,7 +154,7 @@ mod tests {
     #[test]
     fn parse_tag_complicated() -> Result<(), Error> {
         let tag = parse_tag("#[e:#[a:#b.c#]d#][f:#g.h#]i.j.k#")?;
-        assert_eq!(tag.key, "i");
+        assert_eq!(tag.key.unwrap(), "i");
         assert_eq!(tag.modifiers, vec!["j", "k"]);
         Ok(())
     }
@@ -198,9 +204,9 @@ mod tests {
     #[test]
     fn parse_tag_multi_action() -> Result<(), Error> {
         let src = "#[one:#two#][three:#four#]tagname.s.capitalize#";
-        let mut actions = BTreeMap::new();
-        actions.insert("one".to_string(), TRule::parse("#two#").unwrap());
-        actions.insert("three".to_string(), TRule::parse("#four#").unwrap());
+        let mut actions = Vec::new();
+        actions.push((Some("one".to_string()), parse_str("#two#").unwrap()));
+        actions.push((Some("three".to_string()), parse_str("#four#").unwrap()));
         let tag = parse_tag(src)?;
         assert_eq!(
             tag,

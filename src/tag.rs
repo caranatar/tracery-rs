@@ -1,63 +1,63 @@
-use crate::{grammar::Grammar, parser::parse_tag, Error, Flatten, Result, Rule};
-use rand::seq::SliceRandom;
-use std::collections::BTreeMap;
+use crate::{grammar::Grammar, Error, Execute, Result, Rule};
+use rand::{seq::SliceRandom, Rng};
 
-/// Structure representing a `#tag#` in a tracery rule
-///
-/// The `key` represents the name of the rule to look for replacements from.
-/// The `actions` are bracketed and come before the `key', like `[action:#otherkey#]key`
-/// The `modifiers` change the result of replacing `key`. Some examples are:
-///
-/// ```ignore
-/// #key.s# // => pluralizes the replacement
-/// #key.capitalize# // => capitalizes the first word of the replacement
-/// #key.inQuotes# // => wraps the replacement in quotes
-/// // etc...
-/// ```
 #[derive(Debug, PartialEq, Clone)]
-pub struct Tag {
-    pub(crate) key: String,
-    pub(crate) actions: BTreeMap<String, Rule>,
+pub(crate) struct Action {
+    pub(crate) label: Option<String>,
+    pub(crate) rule: Rule,
+}
+
+impl From<(Option<String>, Rule)> for Action {
+    fn from((label, rule): (Option<String>, Rule)) -> Self {
+        Action { label, rule }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub(crate) struct Tag {
+    pub(crate) key: Option<String>,
+    pub(crate) actions: Vec<Action>,
     pub(crate) modifiers: Vec<String>,
 }
 
 impl Tag {
     /// Creates a tag with the given key and no associated actions or modifiers
-    pub fn new<S: Into<String>>(key: S) -> Tag {
+    pub(crate) fn new<S: Into<String>>(key: S) -> Tag {
         Tag {
-            key: key.into(),
-            actions: BTreeMap::new(),
-            modifiers: vec![],
+            key: Some(key.into()),
+            actions: Vec::new(),
+            modifiers: Vec::new(),
         }
     }
 
-    /// uses self.key to retrieve a list of rules for that key.
-    /// First we look in the `Tag`s `actions`, and if the key isn't present, we use a `Grammar`
-    /// (presumably the context that we are flattening this tag in)
-    pub fn get_rule(
+    pub(crate) fn empty() -> Tag {
+        Tag {
+            key: None,
+            actions: Vec::new(),
+            modifiers: Vec::new(),
+        }
+    }
+
+    pub(crate) fn get_rule<R: ?Sized + Rng>(
         &self,
-        grammar: &Grammar,
-        overrides: &mut BTreeMap<String, String>,
+        grammar: &mut Grammar,
+        rng: &mut R,
     ) -> Result<String> {
-        if let Some(rule) = overrides.get(&self.key) {
-            return Ok(rule.clone());
+        match &self.key {
+            Some(key) => {
+                let rule = match grammar.get_rule(key) {
+                    Some(rules) => Ok(rules.choose(rng).unwrap().clone()),
+                    None => Err(Error::MissingKeyError(key.clone())),
+                }?;
+                rule.execute(grammar, rng)
+            }
+            None => Ok(String::default()),
         }
-
-        if let Some(rules) = grammar.get_rule(&self.key) {
-            let mut rng = rand::thread_rng();
-            let choice = rules.choose(&mut rng).unwrap();
-            return choice.flatten(grammar, overrides);
-        }
-
-        Err(Error::MissingKeyError(format!(
-            "Could not find key {}",
-            self.key
-        )))
     }
 
     /// Applies the modifiers associated with this Tag to a given string, using
     /// the definitions in the given Grammar
-    pub fn apply_modifiers(&self, s: &str, grammar: &Grammar) -> String {
+    pub(crate) fn apply_modifiers(&self, s: &str, grammar: &Grammar) -> String {
         let mut string = String::from(s);
         for modifier in self.modifiers.iter() {
             if let Some(f) = grammar.get_modifier(modifier) {
@@ -68,47 +68,35 @@ impl Tag {
     }
 
     /// Adds the given actions to this tag
-    pub fn with_actions(mut self, actions: BTreeMap<String, Rule>) -> Tag {
-        self.actions = actions;
+    pub(crate) fn with_actions<A>(mut self, mut actions: Vec<A>) -> Tag
+    where
+        A: Into<Action>,
+    {
+        self.actions = actions.drain(..).map(|a| a.into()).collect();
         self
     }
 
     /// Adds the given modifiers to this tag
-    pub fn with_modifiers<S: Into<String>>(mut self, modifiers: Vec<S>) -> Tag {
+    pub(crate) fn with_modifiers<S: Into<String>>(mut self, modifiers: Vec<S>) -> Tag {
         self.modifiers = modifiers.into_iter().map(|s| s.into()).collect();
         self
     }
-
-    /// Parses a tag object from the given string
-    pub fn parse(s: &str) -> Result<Tag> {
-        Ok(parse_tag(s)?)
-    }
 }
 
-impl Flatten for Tag {
-    fn flatten(
-        &self,
-        grammar: &Grammar,
-        overrides: &mut BTreeMap<String, String>,
-    ) -> Result<String> {
-        let mut map = BTreeMap::new();
-        for (label, rule) in self.actions.clone().into_iter() {
-            map.insert(label, rule.flatten(grammar, overrides)?);
+impl Execute for Tag {
+    fn execute<R: ?Sized + Rng>(&self, grammar: &mut Grammar, rng: &mut R) -> Result<String> {
+        for action in &self.actions {
+            if action.rule.is_pop() && action.label.is_some() {
+                grammar.pop_rule(action.label.as_ref().unwrap().clone());
+            } else {
+                let output = action.rule.execute(grammar, rng)?;
+                if action.label.is_some() {
+                    grammar.push_rule(action.label.as_ref().unwrap().clone(), output);
+                }
+            }
         }
 
-        // all children of this node need to have an `overrides` map with the
-        // values obtained from flattening the actions, so get our own copy of
-        // `overrides` here, use it to flatten the children, then let it go out of
-        // scope when this is done
-        let mut overrides = overrides.clone();
-
-        // merge `map` and `overrides` now, overwriting anything in `overrides` with what
-        // we obtained and put into `map`
-        for (label, rule) in map.into_iter() {
-            overrides.insert(label, rule);
-        }
-
-        let choice = self.get_rule(grammar, &mut overrides)?;
+        let choice = self.get_rule(grammar, rng)?;
 
         let modified = self.apply_modifiers(&choice, grammar);
 
@@ -119,48 +107,34 @@ impl Flatten for Tag {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::parse_tag;
+    use maplit::hashmap;
 
     #[test]
     fn get_rule_from_grammar() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
-        let tag = Tag::parse("#a#")?;
-        let r = tag.get_rule(&g, &mut BTreeMap::new())?;
+        let input = hashmap! { "a" => vec!["b"] };
+        let mut g = Grammar::from_map(input)?;
+        let tag = parse_tag("#a#")?;
+        let r = tag.get_rule(&mut g, &mut rand::thread_rng())?;
         assert_eq!(r, "b");
         Ok(())
     }
 
     #[test]
-    fn get_rule_from_overrides() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
-        let tag = Tag::parse("#a#")?;
-        let mut overrides = BTreeMap::new();
-        overrides.insert("a".to_string(), "c".to_string());
-        overrides.insert("b".to_string(), "d".to_string());
-        let r = tag.get_rule(&g, &mut overrides)?;
-        assert_eq!(r, "c");
-        let tag = Tag::parse("#b#")?;
-        let r = tag.get_rule(&g, &mut overrides)?;
-        assert_eq!(r, "d");
-        Ok(())
-    }
-
-    #[test]
     fn get_rule_missing_key() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
-        let tag = Tag::parse("#b#")?;
-        let r = tag.get_rule(&g, &mut BTreeMap::new());
+        let input = hashmap! { "a" => vec!["b"] };
+        let mut g = Grammar::from_map(input)?;
+        let tag = parse_tag("#b#")?;
+        let r = tag.get_rule(&mut g, &mut rand::thread_rng());
         assert!(matches!(r, Err(Error::MissingKeyError(_))));
         Ok(())
     }
 
     #[test]
     fn apply_modifiers() -> Result<()> {
-        let input = r#"{"a": ["b"]}"#;
-        let g = Grammar::from_json(input)?;
-        let tag = Tag::parse("#b.capitalize#")?;
+        let input = hashmap! { "a" => vec!["b"] };
+        let g = Grammar::from_map(input)?;
+        let tag = parse_tag("#b.capitalize#")?;
         let x = tag.apply_modifiers("x", &g);
         assert_eq!(x, "X");
         Ok(())
