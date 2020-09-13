@@ -269,6 +269,20 @@ macro_rules! grammar_item {
     };
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! grammar_count {
+    ([$($ctr: tt)*] $(,)?) => {
+        <[()]>::len(&[$($ctr)*])
+    };
+    ([$($ctr: tt)*], $key: literal => [$($value: literal),+ $(,)?] $(, $($rest: tt)*)?) => {
+        $crate::grammar_count!([(), $($ctr)*] $(, $($rest)*)?)
+    };
+    ([$($ctr: tt)*], $key: literal => $value: literal $(, $($rest: tt)*)?) => {
+        $crate::grammar_count!([(), $($ctr)*] $(, $($rest)*)?)
+    };
+}
+
 /// Convenience macro that allows for shorthand creation of [`Grammar`]s.
 ///
 /// Accepts input in the form `"key" => [ "list", "of", "rules" ]` or, in the
@@ -310,7 +324,8 @@ macro_rules! grammar_item {
 macro_rules! grammar {
     ($($input: tt)+) => {
         {
-            let mut _map = std::collections::HashMap::new();
+            let _cap = $crate::grammar_count!([], $($input)+);
+            let mut _map = std::collections::HashMap::with_capacity(_cap);
             $crate::grammar_item!(_map, $($input)+);
             $crate::from_map(_map)
         }
